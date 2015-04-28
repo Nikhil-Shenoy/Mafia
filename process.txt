@@ -1,0 +1,43 @@
+1 Central Controller:
+	- Manages game logic
+	- Registers users
+	- Manages chat log
+
+Possible Players:
+	- Narrator
+	- Cop
+	- Doctor
+	- Mafia
+	- Townsman
+
+Game Flow:
+	- Controller starts and listens for connections
+	- When a a connection is established, all the information about that connection is stored.
+	- Register 5 players minimum
+	- Five players are registered, and no one else connects within 5 seconds, continue to set up the game
+	- Each player is randomly assigned a role.
+		- Only one Narrator, Cop, Doctor, and Mafia. Rest are townspeople
+	- Result of assignment is communicated to each player
+
+	- Now go into game flow loop
+		- Show list of players currently alive
+		- Ask the mafia who from the list they want to kill
+		- Ask the cop who from the list they want to investigate (the cop will get a yes/no answer as to whether the person is mafia or not)
+		- Ask the Doctor who from the list they want to save
+			- Doctor's power trumps the Mafia's power
+		- Then show a special prompt shows up to the Narrator to enter a story for the killed person. If a person was saved, then this should also be shown to the Narrator.
+		- Somebody dies
+		
+		- Show "Open for chat" message
+		- Show client a prompt and accept all messages from all clients
+		- Write all received comments to a log and broadcast to all other clients along with who said that comment
+		- Once someone has been decided to be killed off, then appointed spokesperson (by the central server) will type "KILL".
+		- A special prompt will show up asking for the name of the person that is to be killed.
+		- The selected person dies
+		- Then we loop. This continues until only the mafia is left, or the mafia is killed
+
+	
+	- At the end of the game, all the assignments are revealed.
+
+Notes:
+	- Dead players can still see the chat log, but cannot participate	
