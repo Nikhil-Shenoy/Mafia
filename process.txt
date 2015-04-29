@@ -41,3 +41,104 @@ Game Flow:
 
 Notes:
 	- Dead players can still see the chat log, but cannot participate	
+
+
+
+
+Server Responsibilities:
+	- Register Users
+		- Several lists for each role. Also have a "Dead" list
+		- Recording connection info
+		- On connection, ask for username
+		- Player Struct
+			- Name (must be unique). Maintain a list of taken names
+			- Connection (struct sockaddr_in)
+			- Saved by Doctor flag
+	- Once five players have joined, wait for 2 minutes for additional players.
+	- Assign roles to each player
+		- Send each player a string telling their role.
+	- Create a linked list of current players
+	- Send each player a list of the active players 
+		- Use a broadcast
+	- Start communication with narrator. Everybody else gets "Waiting to begin" message.
+		- Get story to start the game from Narrator
+	- Broadcast story to everyone
+	- Start communication with doctor. Everybody else gets "You are asleep" message.
+		- Get name of saved person from doctor
+			- Error checks to make sure the name is valid
+	- Start communication with cop. Everybody else gets "You are asleep" message.
+		- Get name of suspect from cop
+			- Error checks to make sure the name is valid
+		- Compare name of person to the name of the mafia person. Return boolean based on comparison
+	- Start communication with the mafia. Everybody else gets "You are asleep" message.
+		- Get name of target from the mafia
+			- Error checks to make sure the name is valid
+	- Logic to determine who dies
+		- Doctor's power trumps mafia's power
+	- Start communication with narrator.
+		- Send name of the dead person
+		- Ask for a story back
+	- Broadcast story to everyone
+	- Open up chat to everyone
+		- Use concurrency model from the previous project to accept and process requests
+		- Use Beej's guide
+	- 
+
+
+typedef struct _lists {
+	list Townsmen;
+	list Cops;
+	list Doctors;
+	list Mafia;
+	list Dead;
+} FunGame;
+
+
+
+Notes:
+	- Figure out how to check for terminated TCP connections
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
