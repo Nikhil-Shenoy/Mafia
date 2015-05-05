@@ -17,4 +17,4 @@ select: select.o
 	$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
-	rm -rf *.o server client
+	rm -rf *.o server client select
