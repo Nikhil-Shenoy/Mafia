@@ -5,17 +5,16 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include "func.h"
 
 #define MAXLINE 2048
 #define PORT 5000
 
+
 int main(int argc, char *argv[]) {
 
 	int sockfd;
-	struct sockaddr_in servaddr, cliaddr, temp;
-
-	// Create a socket
-	sockfd = socket(AF_INET, SOCK_DGRAM,0);
+	struct sockaddr_in servaddr, cliaddr;
 
 	// Initialize server struct	
 	bzero(&servaddr, sizeof(servaddr));
@@ -23,50 +22,43 @@ int main(int argc, char *argv[]) {
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(PORT);
 
-	// Initialize temp struct	
-	bzero(&temp, sizeof(temp));
-	temp.sin_family = AF_INET;
-	temp.sin_addr.s_addr = htonl(INADDR_ANY);
-	temp.sin_port = htons(PORT);
-
-
-	fd_set master, read_fd;
+	fd_set read_set;
 	int fdmax;
 
-	// Initialize file descriptor sets
-	FD_ZERO(&master);
+		
+	// Create client sockets and bind
+	int playerfds[5];	
+	init_sockets(playerfds,&servaddr);
+
+
+	// Initialize file descriptor set
 	FD_ZERO(&read_set);
-			
-	// Bind the socket
-	if(bind(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) < 0) {
-		perror("Bind");
-		close(sockfd);
-		exit(1);
-	}
 
-	int playerfds[2];	
-	playerfds[0] = socket(AF_INET,SOCK_DGRAM,0);
-	bind(playerfds[0],(struct sockaddr *)&temp,sizeof(temp));
-	FD_SET(playerfds[0],&master);
+	fdmax = (playerfds[0] > playerfds[1]) ? playerfds[0] + 1 : playerfds[1] + 1;	
 
-	playerfds[1] = socket(AF_INET,SOCK_DGRAM,0);
-	bind(playerfds[1],(struct sockaddr *)&temp,sizeof(temp));
-	FD_SET(playerfds[1],&master);
+	bzero(&cliaddr,sizeof(cliaddr));
+	int clilen; clilen = sizeof(cliaddr);
+	int bytesRead; bytesRead = 0;
+	int nready; nready = 0;
 
-	fdmax = (playerfds[0] > playersfds[1]) ? playerfds[0] : playerfds[1];	
+	char message[MAXLINE];
+	memset(message,'\0',MAXLINE);
 
-	int bytesRead;
-	socklen_t length; length = sizeof(cliaddr);
-	char mesg[MAXLINE];
+	for(; ;) {
+		add_to_set(playerfds,&read_set);
 
-	printf("Starting the server...\n");
-	while(1) {
-		bytesRead = recvfrom(sockfd,mesg,MAXLINE,0,(struct sockaddr *)&cliaddr,&length);
-		printf("Received %u bytes from client.\nMessage is: %s\n\n",bytesRead,mesg);
+		if((nready = select(fdmax,&read_set,NULL,NULL,NULL)) < 0) {
+			fprintf(stderr,"Error in select. Continuing...\n");
+			continue;
+		}
 	
-		sendto(sockfd,mesg,bytesRead,0,(struct sockaddr *)&cliaddr,length);
+		handle_connection(playerfds,&read_set,&cliaddr,&clilen,message);
+	
 	}
 
 	return 0;
 
 }
+
+
+
