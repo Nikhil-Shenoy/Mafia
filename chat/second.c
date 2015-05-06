@@ -31,8 +31,8 @@ int main(int argc, char *argv[]) {
 	//while(fgets(mesg,MAXLINE,stdin) != NULL) {
 	
 	while(1) {
-		sleep(1);
-		strcpy(mesg,"Testing the select");
+		sleep(3);
+		strcpy(mesg,"The other one\n");
 		sendto(sockfd,mesg,MAXLINE,0,(struct sockaddr *)&servaddr,sizeof(servaddr));
 
 		int length; length = sizeof(servaddr);

@@ -8,5 +8,6 @@
 typedef struct sockaddr SA;
 
 void initializeSockets(int *playerfds, struct sockaddr_in *servaddr);
-void handle_connection(int *playerfds,fd_set *read_set,SA *cliaddr, int *clilen,char *message);
+void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliaddr, int *clilen,char *message);
 void add_to_set(int *playerfds, fd_set *read_set);
+int max(int *playerfds);

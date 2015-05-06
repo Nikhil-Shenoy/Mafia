@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 	// Initialize file descriptor set
 	FD_ZERO(&read_set);
 
-	fdmax = (playerfds[0] > playerfds[1]) ? playerfds[0] + 1 : playerfds[1] + 1;	
+	fdmax = max(playerfds) + 1;
 
 	bzero(&cliaddr,sizeof(cliaddr));
 	int clilen; clilen = sizeof(cliaddr);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 	
-		handle_connection(playerfds,&read_set,&cliaddr,&clilen,message);
+		handle_connection(playerfds,&read_set,(struct sockaddr_in *)&cliaddr,&clilen,message);
 	
 	}
 

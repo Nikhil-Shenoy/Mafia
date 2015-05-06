@@ -22,15 +22,16 @@ void init_sockets(int *playerfds, struct sockaddr_in *servaddr) {
 }
 
 
-void handle_connection(int *playerfds,fd_set *read_set,SA *cliaddr, int *clilen,char *message) {
+void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliaddr, int *clilen,char *message) {
 
-	int i, bytesRead;
+	int i, j, bytesRead;
 	for(i = 0; i < 5; i++) {
 		 if(FD_ISSET(playerfds[i],read_set)) {
                         bytesRead = recvfrom(playerfds[i],message,MAXLINE,0,(SA *)cliaddr,clilen);
                         printf("Received message on file descriptor %u\nMessage is: %s\n",playerfds[i],message);
-
-                        sendto(playerfds[i],message,MAXLINE,0,(SA *)cliaddr,*clilen);
+			
+			for(j = 0; j < 5; j++) 
+	                        sendto(playerfds[j],message,MAXLINE,0,(SA *)cliaddr,*clilen);
 		}
 	}
 
@@ -46,6 +47,16 @@ void add_to_set(int *playerfds, fd_set *read_set) {
 	return;
 }
 
+int max(int *playerfds) {
+	int max; max = -1;
+	int i;
+	for(i = 0; i < 5; i++) {
+		if(playerfds[i] > max)
+			max = playerfds[i];
+	}
+
+	return max;	
+}
 
 
 
