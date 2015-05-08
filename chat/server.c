@@ -6,10 +6,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "func.h"
+#include "player.h"
 
 #define MAXLINE 2048
 #define PORT 5000
+#define PLAYERS 10
 
+Player *playerList[PLAYERS];
 
 int main(int argc, char *argv[]) {
 
@@ -41,8 +44,8 @@ int main(int argc, char *argv[]) {
 	int bytesRead; bytesRead = 0;
 	int nready; nready = 0;
 
-	char message[MAXLINE];
-	memset(message,'\0',MAXLINE);
+
+	initPlayerList(playerList);
 
 	for(; ;) {
 		add_to_set(playerfds,&read_set);
@@ -52,7 +55,7 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 	
-		handle_connection(playerfds,&read_set,(struct sockaddr_in *)&cliaddr,&clilen,message);
+		handle_connection(playerfds,&read_set,(struct sockaddr_in *)&cliaddr,&clilen,playerList);
 	
 	}
 

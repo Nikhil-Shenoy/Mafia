@@ -1,10 +1,10 @@
 CC=gcc
 CFLAGS = -I. -g
 OBJ = client.o server.o func.o
-SERV_OBJ = server.o func.o
-CLI_OBJ = client.o func.o
-SEC_OBJ = second.o func.o
-DEPS = func.h
+SERV_OBJ = server.o func.o list.o
+CLI_OBJ = client.o func.o cliHelp.o list.o
+SEC_OBJ = second.o func.o list.o cliHelp.o
+DEPS = func.h cliHelp.h player.h list.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -25,4 +25,4 @@ select: select.o
 	$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
-	rm -rf *.o server client select
+	rm -rf *.o server client second

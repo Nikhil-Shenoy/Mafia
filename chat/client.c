@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include "cliHelp.h"
 
 #define MAXLINE 2048
 #define PORT 5000
@@ -26,14 +27,20 @@ int main(int argc, char *argv[]) {
 	int bytesRead;
 	char mesg[MAXLINE];
 	char recvline[MAXLINE];
+	char name[MAXLINE];
 
 	printf("Starting the client...\n");
-	//while(fgets(mesg,MAXLINE,stdin) != NULL) {
+	
+	printf("What is your name? ");
+	fgets(name,MAXLINE,stdin);
 	
 	while(1) {
-		sleep(1);
-		strcpy(mesg,"Testing the select");
-		sendto(sockfd,mesg,MAXLINE,0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+		//sleep(1);
+		//strcpy(mesg,"Testing the select");
+		printf("--> ");
+		fgets(mesg,MAXLINE,stdin);
+		//sendto(sockfd,mesg,MAXLINE,0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+		sendCliPacket(name,mesg,sockfd,&servaddr);
 
 		int length; length = sizeof(servaddr);
 		bytesRead = recvfrom(sockfd,recvline,MAXLINE,0,(struct sockaddr *)&servaddr,&length);
