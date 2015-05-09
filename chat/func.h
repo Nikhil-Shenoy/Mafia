@@ -12,10 +12,11 @@
 
 typedef struct sockaddr SA;
 
-void initializeSockets(int *playerfds, struct sockaddr_in *servaddr);
+void init_sockets(int *playerfds, struct sockaddr_in *servaddr);
 void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliaddr, int *clilen,Player **playerList);
 void add_to_set(int *playerfds, fd_set *read_set);
 int max(int *playerfds);
 void addClientToList(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList);
+void initPlayerList(Player **playerList);
 
 #endif
