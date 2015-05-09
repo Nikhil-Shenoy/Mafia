@@ -10,7 +10,7 @@
 #include "player.h"
 #include "cliHelp.h"
 
-int inList(char *name, Player **playerList);
+int inList(CliPacket *name, Player **playerList);
 void insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList);
 
 #endif

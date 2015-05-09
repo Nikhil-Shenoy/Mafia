@@ -14,6 +14,8 @@
 #define PORT 5000
 #define PLAYERS 10
 
+char group[5][2*MAXLINE];
+int groupCount;
 
 void init_sockets(int *playerfds, struct sockaddr_in *servaddr) {
 
@@ -23,38 +25,59 @@ void init_sockets(int *playerfds, struct sockaddr_in *servaddr) {
                 bind(playerfds[i],(SA *)servaddr,sizeof(*servaddr));
         }
 
+	memset(group,'\0',10*MAXLINE);
+	groupCount = 0;
+
 }
 
 
 void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliaddr, int *clilen,Player **playerList) {
 
-
 	int i, j, bytesRead;
-	for(i = 0; i < 5; i++) {
-		 if(FD_ISSET(playerfds[i],read_set)) {
-			CliPacket cliMessage;
-                        bytesRead = recvfrom(playerfds[i],&cliMessage,sizeof(cliMessage),0,(SA *)cliaddr,clilen);
-                        printf("Received message on file descriptor %u\nMessage is: %s\n",playerfds[i],cliMessage.message);
 
-			addClientToList(&cliMessage,cliaddr,playerList);	
 
-			// For each descriptor, send a message to each player
-			//int j;
-			//for(j = 0; j < 10; j++)
-		        	//sendto(playerfds[i],cliMessage.message,MAXLINE,0,(SA *)&(playerList[i]->playerInfo),sizeof(playerList[i]->playerInfo));
-		}
-	}
+	while(groupCount != 5) {
+	
+		for(i = 0; i < 5; i++) {
+			 if(FD_ISSET(playerfds[i],read_set)) {
+				CliPacket cliMessage;
+	                        bytesRead = recvfrom(playerfds[i],&cliMessage,sizeof(cliMessage),0,(SA *)cliaddr,clilen);
+	                        printf("Received message on file descriptor %u\nMessage is: %s\n",playerfds[i],cliMessage.message);
+				sprintf(group[groupCount],"\t%s: %s",cliMessage.name,cliMessage.message);
 
-	for(i = 0; i < 10; i++) {
-		if(playerList[i] != NULL) {
-			for(j = 0; j < 5; j++) {
-				if(FD_ISSET(playerfds[j],read_set)) {
-					sendto(playerfds[j],playerList[i]->message,MAXLINE,0,(SA *)&(playerList[i]->playerInfo),sizeof(playerList[i]->playerInfo));
-				}
+				int clilen; clilen = sizeof(*cliaddr);
+				if(groupCount == 4)
+					sendto(playerfds[i],"not accepting",strlen("not accepting"),0,(SA *)cliaddr,clilen);
+				else 
+					sendto(playerfds[i],"accepting",strlen("accepting"),0,(SA *)cliaddr,clilen);
+				groupCount++;	
+	
+				addClientToList(&cliMessage,cliaddr,playerList);	
+	
 			}
 		}
 
 	}
+
+	for(i = 0; i < 10; i++) {
+		for(j = 0; j < 5; j++) {
+			if((playerList[i] != NULL) &&  (FD_ISSET(playerfds[j],read_set))){
+				int k;
+				for(k = 0; k < 5; k++) {
+					sendto(playerfds[j],group[k],2*MAXLINE,0,(SA *)&(playerList[i]->playerInfo),sizeof(playerList[i]->playerInfo));
+				}
+				sendto(playerfds[j],"end stream",strlen("end stream"),0,(SA *)&(playerList[i]->playerInfo),sizeof(playerList[i]->playerInfo));
+				sendto(playerfds[j],"accepting",strlen("accepting"),0,(SA *)&(playerList[i]->playerInfo),sizeof(playerList[i]->playerInfo));
+	
+			}
+		}
+
+	}
+
+	
+
+	groupCount = 0;
+	memset(group,'\0',5*2*MAXLINE);
 
 	return;
 }
@@ -98,7 +121,7 @@ void addClientToList(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Play
 	int i;
 	for(i = 0; i < PLAYERS; i++) {
 		
-		if(inList(newPlayerMesg->name,playerList))
+		if(inList(newPlayerMesg,playerList))
 			return;
 		else {
 			insert(newPlayerMesg,cliaddr,playerList);

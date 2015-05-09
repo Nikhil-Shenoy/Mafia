@@ -9,12 +9,15 @@
 
 // returns 1 if in list, 0 otherwise
 
-int inList(char *name, Player **playerList) {
+int inList(CliPacket *newClient, Player **playerList) {
 
 	int i;
 	for(i = 0; i < 10; i++) {
-		if((playerList[i] != NULL) && (strcmp(name,playerList[i]->name) == 0))
+		if((playerList[i] != NULL) && (strcmp(newClient->name,playerList[i]->name) == 0)) {
+			memset(playerList[i]->message,'\0',MAXLINE);
+			strcpy(playerList[i]->message,newClient->message);
 			return 1;
+		}
 	}
 
 	return 0;
@@ -33,8 +36,11 @@ void insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **play
 			strcpy(playerList[i]->message,newPlayerMesg->message);
 			memcpy(&(playerList[i]->playerInfo),cliaddr,sizeof(*cliaddr));
 
+
 			return;
 		}
 	}
 
 }
+
+
