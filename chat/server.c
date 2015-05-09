@@ -16,8 +16,7 @@ Player *playerList[PLAYERS];
 
 int main(int argc, char *argv[]) {
 
-	// Display IP address. Distribute to clients
-
+	// TODO: Display IP address. Distribute to clients
 
 	int sockfd;
 	struct sockaddr_in servaddr, cliaddr;
@@ -42,7 +41,6 @@ int main(int argc, char *argv[]) {
 
 	bzero(&cliaddr,sizeof(cliaddr));
 	int clilen; clilen = sizeof(cliaddr);
-	int bytesRead; bytesRead = 0;
 	int nready; nready = 0;
 
 	initPlayerList(playerList);
@@ -55,7 +53,7 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 
-		handle_connection(playerfds,&read_set,(struct sockaddr_in *)&cliaddr,&clilen,playerList);
+		handle_connection(playerfds, &read_set, (struct sockaddr_in *)&cliaddr, &clilen, playerList);
 
 	}
 

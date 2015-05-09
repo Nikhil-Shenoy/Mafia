@@ -5,6 +5,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <unistd.h>
+#include <ctype.h>
 #include "func.h"
 #include "cliHelp.h"
 #include "player.h"
@@ -30,12 +32,11 @@ void init_sockets(int *playerfds, struct sockaddr_in *servaddr) {
 	groupCount = 0;
 }
 
-void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *cliaddr, int *clilen,Player **playerList) {
-
-	int i, j, bytesRead;
+void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *cliaddr, socklen_t *clilen,Player **playerList) {
+	int bytesRead;
 
 	while(groupCount < MSGCOUNT) {
-		for(i = 0; i < PLAYERS; i++) {
+		for(int i = 0; i < PLAYERS; i++) {
 			if(FD_ISSET(playerfds[i],read_set)) {
 				CliPacket cliMessage;
 
@@ -60,21 +61,19 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 	}
 
 	// Broadcast the stored messages
-	
-	int sock, status;
-	struct sockaddr_in sock_in;
-	int on = 1;
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in sock_in = {
+		.sin_addr.s_addr = htonl(INADDR_ANY),
+		.sin_port = htons(PORT+2),
+		.sin_family = AF_INET
+	};
+	int sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-	sock_in.sin_addr.s_addr = htonl(INADDR_ANY);
-	sock_in.sin_port = htons(PORT+2);
-	sock_in.sin_family = AF_INET;
-
-
+	int status;
 	//status = bind(sock, (struct sockaddr *)&sock_in, sizeof(struct sockaddr_in));
 	//printf("Bind Status = %d\n", status);
 
+	int on = 1;
 	status = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(int) );
 	printf("Setsockopt Status = %d\n", status);
 
@@ -82,7 +81,7 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 	sock_in.sin_port = htons(PORT+1); /* port number */
 	sock_in.sin_family = AF_INET;
 
-	for(i = 0; i < PLAYERS; i++) {
+	for(int i = 0; i < PLAYERS; i++) {
 		status = sendto(sock, group[i],2*MAXLINE + 10 , 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
 		printf("sendto Status = %d\n", status);
 
@@ -97,8 +96,8 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 
 
 	/*
-	for(i = 0; i < 10; i++) {
-		for(j = 0; j < 5; j++) {
+	for(int i = 0; i < 10; i++) {
+		for(int j = 0; j < 5; j++) {
 			if((playerList[i] != NULL) &&  (FD_ISSET(playerfds[j],read_set))){
 				int k;
 				for(k = 0; k < 5; k++) {
@@ -120,8 +119,7 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 }
 
 void add_to_set(int *playerfds, int len, fd_set *read_set) {
-	int i;
-	for(i = 0; i < len; i++)
+	for(int i = 0; i < len; i++)
 		FD_SET(playerfds[i],read_set);
 
 	return;
@@ -129,8 +127,7 @@ void add_to_set(int *playerfds, int len, fd_set *read_set) {
 
 int max(int *arr, int len) {
 	int max = -1;
-	int i;
-	for(i = 0; i < len; i++) {
+	for(int i = 0; i < len; i++) {
 		if(arr[i] > max)
 			max = arr[i];
 	}
@@ -139,9 +136,7 @@ int max(int *arr, int len) {
 }
 
 void initPlayerList(Player **playerList) {
-
-	int i;
-	for(i = 0; i < PLAYERS; i++)
+	for(int i = 0; i < PLAYERS; i++)
 		playerList[i] = NULL;
 }
 

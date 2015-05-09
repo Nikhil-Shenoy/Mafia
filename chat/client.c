@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include "cliHelp.h"
 #include <arpa/inet.h>
+#include <stdbool.h>
 
 #define MAXLINE 2048
 #define PORT 5000
@@ -31,19 +32,17 @@ int main(int argc, char *argv[]) {
 	sockfd = socket(AF_INET,SOCK_DGRAM,0);
 	bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
-
 	// Create socket to receive broadcasts
-	
 	struct sockaddr_in broadaddr;
+	socklen_t sinlen = sizeof(struct sockaddr_in);
 
-	int broadSock, status, sinlen;
-	sinlen = sizeof(struct sockaddr_in);
-
-	broadSock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	int broadSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 	broadaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	broadaddr.sin_port = htons(PORT+1);
 	broadaddr.sin_family = AF_INET;
+
+	int status;
 
 	status = bind(broadSock, (struct sockaddr *)&broadaddr, sinlen);
 	printf("Bind Status for broadSock = %d\n", status);
@@ -56,8 +55,8 @@ int main(int argc, char *argv[]) {
 	char recvline[2*MAXLINE];
 	char name[MAXLINE];
 
-	int chatDone; chatDone = 0; // 1 for yes, 0 for no
-	int serverAccepts; serverAccepts = 1; // 1 for yes, 0 for no
+	bool chatDone = false;
+	bool serverAccepts = true;
 
 	printf("Starting the client...\n");
 
@@ -79,9 +78,11 @@ int main(int argc, char *argv[]) {
 			bytesRead = recvfrom(sockfd,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
 
 			if(strcmp(recvline,"accepting") != 0)
-				serverAccepts = 0;
+				serverAccepts = false;
 			else
-				printf("Received %u bytes.\nResponse is %s\n\n",bytesRead,recvline);
+				printf("Received %u bytes.\n"
+				       "Response is %s\n\n",
+				       bytesRead,recvline);
 		}
 
 		while(strcmp(recvline,"end stream") != 0) {
@@ -96,10 +97,7 @@ int main(int argc, char *argv[]) {
 
 		bytesRead = recvfrom(broadSock,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
 		if(strcmp(recvline,"accepting") == 0)
-			serverAccepts = 1;
-
-
-
+			serverAccepts = true;
 	}
 
 	return 0;
