@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "cliHelp.h"
+#include <arpa/inet.h>
 
 #define MAXLINE 2048
 #define PORT 5000
@@ -50,9 +51,7 @@ int main(int argc, char *argv[]) {
 	status = getsockname(broadSock, (struct sockaddr *)&broadaddr, &sinlen);
 	printf("broadSock port %d\n",htons(broadaddr.sin_port));
 
-
-
-	int bytesRead;
+	uint32_t bytesRead;
 	char mesg[MAXLINE];
 	char recvline[2*MAXLINE];
 	char name[MAXLINE];
@@ -61,17 +60,16 @@ int main(int argc, char *argv[]) {
 	int serverAccepts; serverAccepts = 1; // 1 for yes, 0 for no
 
 	printf("Starting the client...\n");
-	
+
 	printf("What is your name? ");
 	fgets(name,MAXLINE,stdin);
 
 	// Get rid of the newline at the end of the name
 	name[strlen(name)-1] = '\0';
-	
-	
+
 	while(!chatDone) {
 
-		int length; length = sizeof(servaddr);
+		socklen_t length = sizeof(servaddr);
 
 		while(serverAccepts) {
 			printf("--> ");
@@ -82,10 +80,10 @@ int main(int argc, char *argv[]) {
 
 			if(strcmp(recvline,"accepting") != 0)
 				serverAccepts = 0;
-			else			
+			else
 				printf("Received %u bytes.\nResponse is %s\n\n",bytesRead,recvline);
 		}
-	
+
 		while(strcmp(recvline,"end stream") != 0) {
 			bytesRead = recvfrom(broadSock,recvline,2*MAXLINE+10,0,(struct sockaddr *)&servaddr,&length);
 			if(strcmp(recvline,"end stream") != 0) {
@@ -100,7 +98,7 @@ int main(int argc, char *argv[]) {
 		if(strcmp(recvline,"accepting") == 0)
 			serverAccepts = 1;
 
-		
+
 
 	}
 

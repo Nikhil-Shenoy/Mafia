@@ -13,53 +13,50 @@
 #define MAXLINE 2048
 #define PORT 5000
 #define PLAYERS 5
+#define MSGCOUNT 5
 
-char group[PLAYERS][2*MAXLINE];
+char group[MSGCOUNT][2*MAXLINE];
 int groupCount;
 
 void init_sockets(int *playerfds, struct sockaddr_in *servaddr) {
 
-        int i;
-        for(i = 0; i < PLAYERS; i++) {
-                playerfds[i] = socket(AF_INET,SOCK_DGRAM,0);
-                bind(playerfds[i],(SA *)servaddr,sizeof(*servaddr));
-        }
+	int i;
+	for(i = 0; i < PLAYERS; i++) {
+		playerfds[i] = socket(AF_INET,SOCK_DGRAM,0);
+		bind(playerfds[i],(SA *)servaddr,sizeof(*servaddr));
+	}
 
 	memset(group,'\0',10*MAXLINE);
 	groupCount = 0;
-
 }
 
-
-void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliaddr, int *clilen,Player **playerList) {
+void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *cliaddr, int *clilen,Player **playerList) {
 
 	int i, j, bytesRead;
 
-
-	while(groupCount != PLAYERS) {
-	
+	while(groupCount < MSGCOUNT) {
 		for(i = 0; i < PLAYERS; i++) {
-			 if(FD_ISSET(playerfds[i],read_set)) {
+			if(FD_ISSET(playerfds[i],read_set)) {
 				CliPacket cliMessage;
-	                        bytesRead = recvfrom(playerfds[i],&cliMessage,sizeof(cliMessage),0,(SA *)cliaddr,clilen);
-	                        printf("Received message on file descriptor %u\nMessage is: %s\n",playerfds[i],cliMessage.message);
+
+				bytesRead = recvfrom(playerfds[i], &cliMessage, sizeof(cliMessage), 0,(SA *)cliaddr, clilen);
+				printf("Received message on file descriptor %i\n"
+				       "Message is: %s\n",
+				       playerfds[i],cliMessage.message);
 				if(!isalnum(cliMessage.message[0]))
 					continue;
-				
+
 				sprintf(group[groupCount],"\t%s: %s",cliMessage.name,cliMessage.message);
 
 				int clilen; clilen = sizeof(*cliaddr);
-				if(groupCount == 4)
-					sendto(playerfds[i],"not accepting",strlen("not accepting"),0,(SA *)cliaddr,clilen);
-				else 
-					sendto(playerfds[i],"accepting",strlen("accepting"),0,(SA *)cliaddr,clilen);
-				groupCount++;	
-	
-				addClientToList(&cliMessage,cliaddr,playerList);	
-	
+				char *acceptMsg = (groupCount == MSGCOUNT - 1)? "not accepting" : "accepting";
+				sendto(playerfds[i], acceptMsg, strlen(acceptMsg), 0, (SA *)cliaddr, clilen);
+				groupCount++;
+
+				addClientToList(&cliMessage,cliaddr,playerList);
+
 			}
 		}
-
 	}
 
 	// Broadcast the stored messages
@@ -109,13 +106,11 @@ void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliad
 				}
 				sendto(playerfds[j],"end stream",strlen("end stream"),0,(SA *)&(playerList[i]->playerInfo),sizeof(playerList[i]->playerInfo));
 				sendto(playerfds[j],"accepting",strlen("accepting"),0,(SA *)&(playerList[i]->playerInfo),sizeof(playerList[i]->playerInfo));
-	
+
 			}
 		}
-
 	}
 	*/
-	
 
 	groupCount = 0;
 	memset(group,'\0',PLAYERS*2*MAXLINE);
@@ -124,53 +119,35 @@ void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliad
 	return;
 }
 
-void add_to_set(int *playerfds, fd_set *read_set) {
-
+void add_to_set(int *playerfds, int len, fd_set *read_set) {
 	int i;
-	for(i = 0; i < PLAYERS; i++) 
+	for(i = 0; i < len; i++)
 		FD_SET(playerfds[i],read_set);
 
 	return;
 }
 
-int max(int *playerfds) {
-	int max; max = -1;
+int max(int *arr, int len) {
+	int max = -1;
 	int i;
-	for(i = 0; i < PLAYERS; i++) {
-		if(playerfds[i] > max)
-			max = playerfds[i];
+	for(i = 0; i < len; i++) {
+		if(arr[i] > max)
+			max = arr[i];
 	}
 
-	return max;	
+	return max;
 }
 
 void initPlayerList(Player **playerList) {
 
-	int i; 
-	for(i = 0; i < PLAYERS; i++) 
+	int i;
+	for(i = 0; i < PLAYERS; i++)
 		playerList[i] = NULL;
-	
 }
 
+// If player is not in the list, add him to the first Null spot.
 void addClientToList(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList) {
 
-	/*
-			If player is not in the list, add him to the first Null spot
-			Else, return
-	*/
-
-
-	int i;
-	for(i = 0; i < PLAYERS; i++) {
-		
-		if(inList(newPlayerMesg,playerList))
-			return;
-		else {
-			insert(newPlayerMesg,cliaddr,playerList);
-			return;
-		}
-
-		
-	}
-
+	if(!inList(newPlayerMesg,playerList))
+		insert(newPlayerMesg,cliaddr,playerList);
 }
