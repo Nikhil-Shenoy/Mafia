@@ -11,7 +11,7 @@
 #include "vars.h"
 
 struct player {
-	char name[MAXLINE];	
+	char name[MAXLINE];
 	char message[MAXLINE];
 	struct sockaddr_in playerInfo;
 };

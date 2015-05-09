@@ -1,14 +1,21 @@
 #ifndef FUNC_H
 #define FUNC_H
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netinet/in.h>
-#include "player.h"
+
 #include "cliHelp.h"
+#include "dbg.h"
+#include "func.h"
+#include "list.h"
+#include "player.h"
 #include "vars.h"
 
 typedef struct sockaddr SA;

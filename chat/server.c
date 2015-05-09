@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 	fdmax = max(playerfds, PLAYERS) + 1;
 
 	bzero(&cliaddr,sizeof(cliaddr));
-	int clilen; clilen = sizeof(cliaddr);
+	socklen_t clilen = sizeof(cliaddr);
 	int nready; nready = 0;
 
 	initPlayerList(playerList);

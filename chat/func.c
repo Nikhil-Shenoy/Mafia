@@ -1,16 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <ctype.h>
 #include "func.h"
-#include "cliHelp.h"
-#include "player.h"
-#include "list.h"
 
 char group[MSGCOUNT][2*MAXLINE];
 int groupCount;
@@ -36,9 +24,9 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 				CliPacket cliMessage;
 
 				bytesRead = recvfrom(playerfds[i], &cliMessage, sizeof(cliMessage), 0,(SA *)cliaddr, clilen);
-				printf("Received message on file descriptor %i\n"
-				       "Message is: %s\n",
-				       playerfds[i],cliMessage.message);
+				debug("Received message on file descriptor %i", playerfds[i]);
+				debug("Message is: %s", cliMessage.message);
+
 				if(!isalnum(cliMessage.message[0]))
 					continue;
 
@@ -70,7 +58,7 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 
 	int on = 1;
 	status = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(int) );
-	printf("Setsockopt Status = %d\n", status);
+	debug("Setsockopt Status: %d", status);
 
 	sock_in.sin_addr.s_addr=htonl(-1); /* send message to 255.255.255.255 */
 	sock_in.sin_port = htons(PORT+1); /* port number */
@@ -78,16 +66,17 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 
 	for(int i = 0; i < PLAYERS; i++) {
 		status = sendto(sock, group[i],2*MAXLINE + 10 , 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
-		printf("sendto Status = %d\n", status);
+		debug("sendto Status: %d", status);
 
-		// Verify that client has received the broadcast? Maybe use receive and check every packet	
+		// TODO: Verify that client has received the broadcast? Maybe
+		// use receive and check every packet
 	}
 
 	status = sendto(sock,"end stream", strlen("end stream"), 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
-	printf("sendto Status = %d\n", status);
+	debug("sendto Status: %d", status);
 
 	status = sendto(sock,"accepting", strlen("accepting"), 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
-	printf("sendto Status = %d\n", status);
+	debug("sendto Status: %d", status);
 
 
 	/*
