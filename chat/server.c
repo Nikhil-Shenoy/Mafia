@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 	initPlayerList(playerList);
 
 	for(; ;) {
-		add_to_set(playerfds,&read_set);
+		add_to_set(playerfds, PLAYERS, &read_set);
 
 		if((nready = select(fdmax,&read_set,NULL,NULL,NULL)) < 0) {
 			fprintf(stderr,"Error in select. Continuing...\n");
