@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS = -I. -g
+CFLAGS = -Wall -I. -g -std=gnu99
 OBJ = client.o server.o func.o
 SERV_OBJ = server.o func.o list.o
 CLI_OBJ = client.o func.o cliHelp.o list.o
