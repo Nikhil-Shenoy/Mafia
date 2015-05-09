@@ -12,10 +12,15 @@
 
 int main(int argc, char *argv[]) {
 
+	if(argc > 2) {
+		fprintf(stderr,"Usage: ./client <IP address of server>\n");
+		exit(1);
+	}
+
 	int sockfd;
 	struct sockaddr_in servaddr;
 
-	char *host = "127.0.0.1";
+	char *host = argv[1];
 
 	bzero(&servaddr,sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
@@ -23,7 +28,30 @@ int main(int argc, char *argv[]) {
 	inet_aton(host,&servaddr.sin_addr);
 
 	sockfd = socket(AF_INET,SOCK_DGRAM,0);
+	bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
+
+	// Create socket to receive broadcasts
 	
+	struct sockaddr_in broadaddr;
+
+	int broadSock, status, sinlen;
+	sinlen = sizeof(struct sockaddr_in);
+
+	broadSock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+	broadaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	broadaddr.sin_port = htons(PORT+1);
+	broadaddr.sin_family = AF_INET;
+
+	status = bind(broadSock, (struct sockaddr *)&broadaddr, sinlen);
+	printf("Bind Status for broadSock = %d\n", status);
+
+	status = getsockname(broadSock, (struct sockaddr *)&broadaddr, &sinlen);
+	printf("broadSock port %d\n",htons(broadaddr.sin_port));
+
+
+
 	int bytesRead;
 	char mesg[MAXLINE];
 	char recvline[2*MAXLINE];
@@ -59,7 +87,7 @@ int main(int argc, char *argv[]) {
 		}
 	
 		while(strcmp(recvline,"end stream") != 0) {
-			bytesRead = recvfrom(sockfd,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
+			bytesRead = recvfrom(broadSock,recvline,2*MAXLINE+10,0,(struct sockaddr *)&servaddr,&length);
 			if(strcmp(recvline,"end stream") != 0) {
 				printf("%s\n",recvline);
 				memset(recvline,'\0',2*MAXLINE);
@@ -68,7 +96,7 @@ int main(int argc, char *argv[]) {
 
 		memset(recvline,'\0',2*MAXLINE);
 
-		bytesRead = recvfrom(sockfd,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
+		bytesRead = recvfrom(broadSock,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
 		if(strcmp(recvline,"accepting") == 0)
 			serverAccepts = 1;
 

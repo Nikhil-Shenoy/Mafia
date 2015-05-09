@@ -12,15 +12,15 @@
 
 #define MAXLINE 2048
 #define PORT 5000
-#define PLAYERS 10
+#define PLAYERS 5
 
-char group[5][2*MAXLINE];
+char group[PLAYERS][2*MAXLINE];
 int groupCount;
 
 void init_sockets(int *playerfds, struct sockaddr_in *servaddr) {
 
         int i;
-        for(i = 0; i < 5; i++) {
+        for(i = 0; i < PLAYERS; i++) {
                 playerfds[i] = socket(AF_INET,SOCK_DGRAM,0);
                 bind(playerfds[i],(SA *)servaddr,sizeof(*servaddr));
         }
@@ -36,13 +36,16 @@ void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliad
 	int i, j, bytesRead;
 
 
-	while(groupCount != 5) {
+	while(groupCount != PLAYERS) {
 	
-		for(i = 0; i < 5; i++) {
+		for(i = 0; i < PLAYERS; i++) {
 			 if(FD_ISSET(playerfds[i],read_set)) {
 				CliPacket cliMessage;
 	                        bytesRead = recvfrom(playerfds[i],&cliMessage,sizeof(cliMessage),0,(SA *)cliaddr,clilen);
 	                        printf("Received message on file descriptor %u\nMessage is: %s\n",playerfds[i],cliMessage.message);
+				if(!isalnum(cliMessage.message[0]))
+					continue;
+				
 				sprintf(group[groupCount],"\t%s: %s",cliMessage.name,cliMessage.message);
 
 				int clilen; clilen = sizeof(*cliaddr);
@@ -59,6 +62,44 @@ void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliad
 
 	}
 
+	// Broadcast the stored messages
+	
+	int sock, status;
+	struct sockaddr_in sock_in;
+	int on = 1;
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+	sock_in.sin_addr.s_addr = htonl(INADDR_ANY);
+	sock_in.sin_port = htons(PORT+2);
+	sock_in.sin_family = AF_INET;
+
+
+	//status = bind(sock, (struct sockaddr *)&sock_in, sizeof(struct sockaddr_in));
+	//printf("Bind Status = %d\n", status);
+
+	status = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(int) );
+	printf("Setsockopt Status = %d\n", status);
+
+	sock_in.sin_addr.s_addr=htonl(-1); /* send message to 255.255.255.255 */
+	sock_in.sin_port = htons(PORT+1); /* port number */
+	sock_in.sin_family = AF_INET;
+
+	for(i = 0; i < PLAYERS; i++) {
+		status = sendto(sock, group[i],2*MAXLINE + 10 , 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
+		printf("sendto Status = %d\n", status);
+
+		// Verify that client has received the broadcast? Maybe use receive and check every packet	
+	}
+
+	status = sendto(sock,"end stream", strlen("end stream"), 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
+	printf("sendto Status = %d\n", status);
+
+	status = sendto(sock,"accepting", strlen("accepting"), 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
+	printf("sendto Status = %d\n", status);
+
+
+	/*
 	for(i = 0; i < 10; i++) {
 		for(j = 0; j < 5; j++) {
 			if((playerList[i] != NULL) &&  (FD_ISSET(playerfds[j],read_set))){
@@ -73,19 +114,20 @@ void handle_connection(int *playerfds,fd_set *read_set,struct sockaddr_in *cliad
 		}
 
 	}
-
+	*/
 	
 
 	groupCount = 0;
-	memset(group,'\0',5*2*MAXLINE);
-
+	memset(group,'\0',PLAYERS*2*MAXLINE);
+	//shutdown(sock,2);
+	close(sock);
 	return;
 }
 
 void add_to_set(int *playerfds, fd_set *read_set) {
 
 	int i;
-	for(i = 0; i < 5; i++) 
+	for(i = 0; i < PLAYERS; i++) 
 		FD_SET(playerfds[i],read_set);
 
 	return;
@@ -94,7 +136,7 @@ void add_to_set(int *playerfds, fd_set *read_set) {
 int max(int *playerfds) {
 	int max; max = -1;
 	int i;
-	for(i = 0; i < 5; i++) {
+	for(i = 0; i < PLAYERS; i++) {
 		if(playerfds[i] > max)
 			max = playerfds[i];
 	}
@@ -102,7 +144,7 @@ int max(int *playerfds) {
 	return max;	
 }
 
-void initPlayerList(struct sockaddr_in **playerList) {
+void initPlayerList(Player **playerList) {
 
 	int i; 
 	for(i = 0; i < PLAYERS; i++) 

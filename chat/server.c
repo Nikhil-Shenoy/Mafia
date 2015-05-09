@@ -16,6 +16,9 @@ Player *playerList[PLAYERS];
 
 int main(int argc, char *argv[]) {
 
+	// Display IP address. Distribute to clients
+
+
 	int sockfd;
 	struct sockaddr_in servaddr, cliaddr;
 
