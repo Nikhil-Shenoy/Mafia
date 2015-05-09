@@ -7,10 +7,6 @@
 #include <netinet/in.h>
 #include "cliHelp.h"
 
-#define MAXLINE 2048
-
-
-
 void sendCliPacket(char *Name,char *Message, int sockfd, struct sockaddr_in *servaddr) {
 
 	// Create the client packet
@@ -24,6 +20,3 @@ void sendCliPacket(char *Name,char *Message, int sockfd, struct sockaddr_in *ser
 	sendto(sockfd,(const void *)&myMessage,sizeof(myMessage),0,(struct sockaddr *)servaddr,sizeof(*servaddr));
 
 }
-		
-
-	

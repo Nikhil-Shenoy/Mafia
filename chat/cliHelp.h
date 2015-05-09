@@ -8,12 +8,11 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-
-#define MAXLINE 2048
+#include "vars.h"
 
 struct cliPacket {
-        char name[MAXLINE];
-        char message[MAXLINE];
+	char name[MAXLINE];
+	char message[MAXLINE];
 };
 
 typedef struct cliPacket CliPacket;

@@ -8,8 +8,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-
-#define MAXLINE 2048
+#include "vars.h"
 
 struct player {
 	char name[MAXLINE];	

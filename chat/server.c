@@ -7,10 +7,7 @@
 #include <netinet/in.h>
 #include "func.h"
 #include "player.h"
-
-#define MAXLINE 2048
-#define PORT 5000
-#define PLAYERS 10
+#include "vars.h"
 
 Player *playerList[PLAYERS];
 

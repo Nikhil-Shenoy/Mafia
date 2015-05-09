@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include "player.h"
 #include "cliHelp.h"
+#include "vars.h"
 
 typedef struct sockaddr SA;
 

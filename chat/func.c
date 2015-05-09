@@ -12,11 +12,6 @@
 #include "player.h"
 #include "list.h"
 
-#define MAXLINE 2048
-#define PORT 5000
-#define PLAYERS 5
-#define MSGCOUNT 5
-
 char group[MSGCOUNT][2*MAXLINE];
 int groupCount;
 

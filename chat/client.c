@@ -5,16 +5,15 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include "cliHelp.h"
 #include <arpa/inet.h>
 #include <stdbool.h>
-
-#define MAXLINE 2048
-#define PORT 5000
+#include "cliHelp.h"
+#include "dbg.h"
+#include "vars.h"
 
 int main(int argc, char *argv[]) {
 
-	if(argc > 2) {
+	if(argc != 2) {
 		fprintf(stderr,"Usage: ./client <IP address of server>\n");
 		exit(1);
 	}
@@ -43,12 +42,11 @@ int main(int argc, char *argv[]) {
 	broadaddr.sin_family = AF_INET;
 
 	int status;
-
 	status = bind(broadSock, (struct sockaddr *)&broadaddr, sinlen);
-	printf("Bind Status for broadSock = %d\n", status);
+	debug("Bind Status for broadSock: %d", status);
 
 	status = getsockname(broadSock, (struct sockaddr *)&broadaddr, &sinlen);
-	printf("broadSock port %d\n",htons(broadaddr.sin_port));
+	debug("broadSock port: %d",htons(broadaddr.sin_port));
 
 	uint32_t bytesRead;
 	char mesg[MAXLINE];
