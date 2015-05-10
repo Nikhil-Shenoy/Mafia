@@ -62,14 +62,10 @@ void listRemove(char *name, PlayerList *list) {
 }
 
 Player *listFind(char *name, PlayerList *list) {
-	Player *cur;
-	cur = list->head;
 
-	while(cur != NULL) {
+	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
 		if(strcasecmp(name,cur->name) == 0)
 			return cur;
-
-		cur = cur->next;
 	}
 
 	return NULL;
@@ -109,17 +105,29 @@ void init_list(PlayerList *list) {
 }
 
 void listApply(void (*a)(Player *p, void *aux),PlayerList *players, void *aux) {
-	Player *cur = players->head;
-	for(int i = 0; i < players->size; i++) {
+	for(Player *cur = players->head; cur; cur = cur->next) {
 		a(cur, aux);
-		cur = cur->next;
 	}
 }
 
 void listSend(PlayerList *players, char *msg, int length) {
-	Player *cur = players->head;
-	for(int i = 0; i < players->size; i++) {
+	for(Player *cur = players->head; cur; cur = cur->next) {
 		robustSend(cur->fd, msg, length);
-		cur = cur->next;
+	}
+}
+
+void listApplyTo(void (*a)(Player *p, void *aux), PlayerList *players, Role r, void *aux) {
+	for(Player *cur = players->head; cur; cur = cur->next) {
+		if (cur->role != r)
+			continue;
+		a(cur, aux);
+	}
+}
+
+void listSendTo(PlayerList *players, Role r, char *msg, int length) {
+	for(Player *cur = players->head; cur; cur = cur->next) {
+		if (cur->role != r)
+			continue;
+		robustSend(cur->fd, msg, length);
 	}
 }

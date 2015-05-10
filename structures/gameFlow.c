@@ -71,30 +71,46 @@ void describeRole(Player *p, void *aux) {
 	robustSend(p->fd, sendbuf, nbytes);
 }
 
-void whoWillYouKill(PlayerList *players) {
+void receiveKill(Player *p, void *aux) {
+	PlayerList *players = aux;
 
-	char mafiaMesg[] = "Hello Mafioso! The living players are:\n";
-
-	char living[players->size][MAXLINE];
-	memset(living,'\0',(players->size)*MAXLINE);
-
-
-	Player *cur = players->head;
-	int i;
-	for(i = 0; i < players->size; cur = cur->next) {
-		living[i][0] = '\t';
-		strcat(living[i],cur->name);
-		i++;
+	char sendbuf[MAXLINE];
+	char recvbuf[MAXLINE];
+	Player *toKill = NULL;
+	while(!toKill) {
+		recv(p->fd, recvbuf, sizeof recvbuf, 0);
+		toKill = listFind(recvbuf, players);
+		if(!toKill) {
+			debug("Mafia player %s chose to kill %s, who does not exist", p->name, recvbuf);
+			int nbytes = sprintf(sendbuf, "Player %s does not exist", recvbuf);
+			robustSend(p->fd, sendbuf, nbytes);
+		} else {
+			debug("Mafia player %s chose to kill %s", p->name, toKill->name);
+		}
 	}
 
-	char command[] = "\nWho do you want to kill?\n--> ";
+	if(!(toKill->saved))
+		toKill->alive = false;
+}
 
-	// Insert receive command for processing
+void whoWillYouKill(PlayerList *players) {
+	char mafiaMesg[] = "Hello Mafioso! The living players are:\n";
 
-	//Player *toKill = listFind(/*name*/,players);
-	//if(!(toKill->saved))
-	//	toKill->alive = false;
+	char living[players->size*MAXLINE];
+	memset(living,'\0',(players->size)*MAXLINE);
+	strcpy(living, mafiaMesg);
 
+	for(Player *cur = players->head; cur; cur = cur->next) {
+		strcat(living, "\t");
+		strcat(living, cur->name);
+		strcat(living, "\n");
+	}
+
+	char command[] = "Who do you want to kill?\n--> ";
+	strcat(living, command);
+
+	listSendTo(players, ROLE_MAFIA, living, strlen(living));
+	listApplyTo(&receiveKill, players, ROLE_MAFIA, NULL);
 }
 
 void whoWillYouSave(PlayerList *players) {

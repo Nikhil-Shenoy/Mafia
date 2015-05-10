@@ -137,7 +137,7 @@ int main(void)
 		.num_ready = &num_ready
 	};
 	while(keep_on_truckin &&
-		  (num_ready <= READY_THRESHOLD ||
+		  (num_ready < READY_THRESHOLD ||
 		   num_ready < clients->size)) {
 		fdmax = fdloop(&master, fdmax, &initLoop, (void *)&initLoop_args);
 	}
@@ -151,7 +151,9 @@ int main(void)
 
 	while(keep_on_truckin && !game_over) {
 		listSend(clients, night_message, strlen(night_message));
+		whoWillYouKill(clients);
 		return 0;
+		// set all saved to false
 	}
 
 	return 0;
