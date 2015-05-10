@@ -9,6 +9,7 @@
 #define BROADCAST_PORT 5001
 #define PLAYERS 5
 #define MSGCOUNT 5
+#define READY_THRESHOLD 5
 
 #define streq(A, B) (strcmp(A, B) == 0)
 #define max(A,B) A < B? B: A

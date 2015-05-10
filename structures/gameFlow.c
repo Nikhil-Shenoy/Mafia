@@ -1,6 +1,16 @@
 #include "gameFlow.h"
 
 
+int arrayMax(int *arr, int len) {
+	int max = -1;
+	for(int i = 0; i < len; i++) {
+		if(arr[i] > max)
+			max = arr[i];
+	}
+
+	return max;
+}
+
 void assignRoles(PlayerList *players) {
 
 	int numPlayers = players->size;
@@ -37,7 +47,7 @@ void assignRoles(PlayerList *players) {
 		cur = cur->next;
 		i++;
 	}
-	
+
 	cur->role = ROLE_COP;
 
 	// Assign doctor's role
@@ -47,14 +57,24 @@ void assignRoles(PlayerList *players) {
 		cur = cur->next;
 		i++;
 	}
-	
+
 	cur->role = ROLE_DOCTOR;
+}
+
+void describeRole(Player *p, void *aux) {
+	(void)aux;
+
+	char sendbuf[MAXLINE];
+	int nbytes = sprintf(sendbuf, "%s: You are a %s\n",
+						 p->name, roleStr[p->role]);
+
+	robustSend(p->fd, sendbuf, nbytes);
 }
 
 void whoWillYouKill(PlayerList *players) {
 
 	char mafiaMesg[] = "Hello Mafioso! The living players are:\n";
-	
+
 	char living[players->size][MAXLINE];
 	memset(living,'\0',(players->size)*MAXLINE);
 
@@ -71,16 +91,16 @@ void whoWillYouKill(PlayerList *players) {
 
 	// Insert receive command for processing
 
-	Player *toKill = listFind(/*name*/,players);
-	if(!(toKill->saved))
-		toKill->alive = false;
+	//Player *toKill = listFind(/*name*/,players);
+	//if(!(toKill->saved))
+	//	toKill->alive = false;
 
 }
 
 void whoWillYouSave(PlayerList *players) {
 
 	char doctorMesg[] = "Hello Doctor! The living players are:\n";
-	
+
 	char living[players->size][MAXLINE];
 	memset(living,'\0',(players->size)*MAXLINE);
 
@@ -96,17 +116,15 @@ void whoWillYouSave(PlayerList *players) {
 	char command[] = "\nWho do you want to save?\n--> ";
 
 	// Insert receive command for processing
-	
-	Player *toSave = listFind(/*name*/,players);
-	toSave->saved = true;
 
-	return;
+	//Player *toSave = listFind(/*name*/,players);
+	//toSave->saved = true;
 }
 
 void whoWillYouInvestigate(PlayerList *players) {
-	
+
 	char copMesg[] = "Hello Cop! The living players are:\n";
-	
+
 	char living[players->size][MAXLINE];
 	memset(living,'\0',(players->size)*MAXLINE);
 
@@ -122,15 +140,13 @@ void whoWillYouInvestigate(PlayerList *players) {
 	char command[] = "\nWho do you want to investigate?\n--> ";
 
 	// Insert receive command for processing
-	
-	Player *toInvestigate = listFind(/*name*/,players);
 
-	if(toInvestigate->role == ROLE_MAFIA)
-		printf("send yes\n");
-	else
-		printf("send no\n");	
+	//Player *toInvestigate = listFind(/*name*/,players);
 
-	return;
+	/* if(toInvestigate->role == ROLE_MAFIA) */
+	/* 	printf("send yes\n"); */
+	/* else */
+	/* 	printf("send no\n");	 */
 }
 
 void collectVotes(PlayerList *players) {
@@ -147,7 +163,7 @@ void collectVotes(PlayerList *players) {
 			extract vote
 			votes[i] = vote;
 		}
-	
+
 		if(i == players->size)
 			allVotesCollected = true;
 		else
@@ -161,7 +177,7 @@ void collectVotes(PlayerList *players) {
 	i = 0;
 
 	int counts[players->size];
-	for(i = 0; i < players->size; i++) 
+	for(i = 0; i < players->size; i++)
 		counts[i] = 0;
 
 	// Collect frequency of votes
@@ -169,22 +185,22 @@ void collectVotes(PlayerList *players) {
 	i = 0;
 	while(cur != NULL) {
 		for(int j = 0; j < players->size; j++) {
-			if(strncasecmp(vote[i],cur->name,strlen(cur->name)) == 0)
+			if(strncasecmp(votes[i],cur->name,strlen(cur->name)) == 0)
 				counts[i]++;
 		}
 
 		cur = cur->next;
 		i++;
-	}		
+	}
 
-	int index = max(counts,players->size);
+	int index = arrayMax(counts,players->size);
 
 	cur = players->head;
 	i = 0;
 	while(i != index) {
 		cur = cur->next;
 		i++;
-	}	
+	}
 
 	if(!(cur->saved))
 		cur->alive = false;
@@ -192,60 +208,6 @@ void collectVotes(PlayerList *players) {
 
 }
 
-
-void apply(void (*a)(),PlayerList *players) {
-
-	Player *cur = players->head;
-	for(int i = 0; i < players->size; i++) {
-		a(cur);
-		cur = cur->next;
-	}
-		
-}
-
 void kill(Player *player) {
 	player->alive = false;
-}		
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}

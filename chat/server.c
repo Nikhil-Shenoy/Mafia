@@ -11,43 +11,48 @@
 #include "dbg.h"
 #include "util.h"
 #include "sock.h"
-//#include "../structures/player.h"
+#include "../structures/player.h"
+#include "../structures/gameFlow.h"
 
-// TEMPORARY
-typedef struct player {
-	bool alive;
-	bool saved;
-	struct sockaddr_in connInfo;
-	int fd;
-	char *name;
-	char role[MAXLINE];
-	struct player *next;
-} Player;
-
-Player *clients[PLAYERS];
+static PlayerList *clients;
+static int listenfd;
 
 static bool keep_on_truckin = true;
 char* welcome_message = "Welcome to Mafia!\nPlease enter your name: ";
+char* night_message = "It is nighttime.\n";
 
-int newConnection(fd_set *fdset, int listenfd, int *num_clients) {
+int newConnection(fd_set *fdset, int listenfd) {
 	int newfd = loggedAccept(listenfd);
 	if (newfd == -1)
 		return -1;
 
 	robustSend(newfd, welcome_message, strlen(welcome_message));
-	clients[*num_clients] = malloc(sizeof(Player));
-	clients[*num_clients]->fd = newfd;
-	clients[*num_clients]->name = NULL;
-	(* num_clients)++;
-	debug("Number of connected clients: %d", *num_clients);
+	listInsert(newfd, clients);
+	debug("Number of connected clients: %d", clients->size);
 
 	FD_SET(newfd, fdset);
 	return newfd;
 }
 
+struct broadcast_obj {
+	char *msg;
+	int sender;
+	int nbytes;
+};
+
+void broadcastMessage(Player *p, void *aux) {
+	struct broadcast_obj *args = aux;
+	debug("Sending message to %d", p->fd);
+
+	if (p->name &&
+		p->fd != args->sender) {
+		robustSend(p->fd, args->msg, args->nbytes);
+	}
+}
+
 struct initLoop_obj {
 	int listenfd;
-	int *num_clients;
+	int *num_ready;
 };
 
 int initLoop(fd_set *fdset, int cur_fd, void *aux) {
@@ -55,7 +60,7 @@ int initLoop(fd_set *fdset, int cur_fd, void *aux) {
 
 	// Either we have a new connection...
 	if (cur_fd == args.listenfd)
-		return newConnection(fdset, args.listenfd, args.num_clients);
+		return newConnection(fdset, args.listenfd);
 
 	// ...or we received a message
 	int nbytes;
@@ -74,35 +79,37 @@ int initLoop(fd_set *fdset, int cur_fd, void *aux) {
 		return -1;
 	}
 
-	Player *sender = NULL;
-	for(int j = 0; j <= PLAYERS; j++ ) {
-		if (clients[j]->fd == cur_fd) {
-			sender = clients[j];
+	Player *sender = clients->head;
+	while(sender) {
+		if (sender->fd == cur_fd) {
 			break;
 		}
+		sender = sender->next;
 	}
 	check(sender, "Could not find client for fd %d", cur_fd);
 
 	// If a player's name isn't set yet, do so now.
 	if (sender->name == NULL) {
 		recvbuf[nbytes-2] = '\0';
-		sender->name = malloc(MAXLINE);
+		sender->name = malloc(strlen(recvbuf));
 		strcpy(sender->name, recvbuf);
+		debug("FD %d is now %s.", cur_fd, sender->name);
+	} else if (recvbuf[0] == '/') {
+		if (strncmp(recvbuf+1, "ready", 5) == 0) {
+			(* args.num_ready)++;
+			debug("Number of readied clients: %d", (*args.num_ready));
+		}
 	} else {
 		char sendbuf[MAXLINE*2];
 		nbytes = sprintf(sendbuf, "%s: %s", sender->name, recvbuf);
 
-		for(int j = 0; j <= PLAYERS; j++) {
-			// Send message to everyone except the
-			// server (listenfd) and the sender (i)
-			if (clients[j] &&
-				FD_ISSET(clients[j]->fd, fdset) &&
-				clients[j]->fd != args.listenfd &&
-				clients[j]->fd != cur_fd &&
-				clients[j]->name) {
-				robustSend(clients[j]->fd, sendbuf, nbytes);
-			}
-		}
+		struct broadcast_obj broadcast_args = {
+			.msg = sendbuf,
+			.sender = cur_fd,
+			.nbytes = nbytes
+		};
+		debug("Broadcasting message: %s", sendbuf);
+		listApply(&broadcastMessage, clients, (void *) &broadcast_args);
 	}
 	return 0;
 error:
@@ -114,20 +121,37 @@ int main(void)
 	fd_set master;
 	FD_ZERO(&master);
 
-	int listenfd = open_listenfd(PORT);
+	clients = malloc(sizeof(*clients));
+	init_list(clients);
+
+	listenfd = open_listenfd(PORT);
 	check((listenfd != -1), "failed to bind port");
 
 	FD_SET(listenfd, &master);
 	int fdmax = listenfd;
 
 	// Start up a chat server that runs until everyone is ready
-	int num_clients = 0;
+	int num_ready = 0;
 	struct initLoop_obj initLoop_args = {
 		.listenfd = listenfd,
-		.num_clients = &num_clients
+		.num_ready = &num_ready
 	};
-	while(keep_on_truckin && num_clients <= PLAYERS) {
+	while(keep_on_truckin &&
+		  (num_ready <= READY_THRESHOLD ||
+		   num_ready < clients->size)) {
 		fdmax = fdloop(&master, fdmax, &initLoop, (void *)&initLoop_args);
+	}
+
+	bool game_over = false;
+	assignRoles(clients);
+	listApply(&describeRole, clients, NULL);
+
+	// If we add more mafioso, we'd need to tell them who they are
+	// here.
+
+	while(keep_on_truckin && !game_over) {
+		listSend(clients, night_message, strlen(night_message));
+		return 0;
 	}
 
 	return 0;
