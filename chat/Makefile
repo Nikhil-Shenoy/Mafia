@@ -2,9 +2,9 @@ CC=gcc
 CFLAGS = -Wall -I. -g -std=gnu99
 OBJ = client.o server.o func.o
 SERV_OBJ = server.o func.o list.o
-CLI_OBJ = client.o func.o cliHelp.o list.o
-SEC_OBJ = second.o func.o list.o cliHelp.o
-DEPS = func.h cliHelp.h player.h list.h
+CLI_OBJ = client.o func.o list.o
+SEC_OBJ = second.o func.o list.o
+DEPS = func.h client.h player.h list.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

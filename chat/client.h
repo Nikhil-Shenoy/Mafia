@@ -1,21 +1,21 @@
-#ifndef CLIHELP_H
-#define CLIHELP_H
+#ifndef CLIENT_H
+#define CLIENT_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdbool.h>
+#include "dbg.h"
 #include "vars.h"
 
-struct cliPacket {
+typedef struct _cliPacket {
 	char name[MAXLINE];
 	char message[MAXLINE];
-};
-
-typedef struct cliPacket CliPacket;
+} CliPacket;
 
 void sendCliPacket(char *Name,char *Message, int sockfd, struct sockaddr_in *servaddr);
 
