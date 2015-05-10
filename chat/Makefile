@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS = -Wall -I. -g -std=gnu99
 OBJ = server.o func.o
-SERV_OBJ = server.o sock.o
+SERV_OBJ = server.o sock.o util.o
 CLI_OBJ = func.o list.o
 DEPS = func.h player.h list.h
 
