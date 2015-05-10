@@ -18,5 +18,6 @@ typedef struct _cliPacket {
 } CliPacket;
 
 void sendCliPacket(char *Name,char *Message, int sockfd, struct sockaddr_in *servaddr);
+int isPacketMine(char *name, char *recvline, char *statString);
 
 #endif

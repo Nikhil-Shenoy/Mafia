@@ -18,33 +18,7 @@ void init_sockets(int *playerfds, struct sockaddr_in *servaddr) {
 void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *cliaddr, socklen_t *clilen,Player **playerList) {
 	int bytesRead;
 
-	while(groupCount < MSGCOUNT) {
-		for(int i = 0; i < PLAYERS; i++) {
-			if(FD_ISSET(playerfds[i],read_set)) {
-				CliPacket cliMessage;
-
-				bytesRead = recvfrom(playerfds[i], &cliMessage, sizeof(cliMessage), 0,(SA *)cliaddr, clilen);
-				debug("Received message on file descriptor %i", playerfds[i]);
-				debug("Message is: %s", cliMessage.message);
-
-				if(!isalnum(cliMessage.message[0]))
-					continue;
-
-				sprintf(group[groupCount],"\t%s: %s",cliMessage.name,cliMessage.message);
-
-				int clilen; clilen = sizeof(*cliaddr);
-				char *acceptMsg = (groupCount == MSGCOUNT - 1)? "not accepting" : "accepting";
-				sendto(playerfds[i], acceptMsg, strlen(acceptMsg), 0, (SA *)cliaddr, clilen);
-				groupCount++;
-
-				addClientToList(&cliMessage,cliaddr,playerList);
-				debug("After addClientToList");
-			}
-		}
-	}
-
-	// Broadcast the stored messages
-
+	// Initialize the broadcast parameters
 	struct sockaddr_in sock_in = {
 		.sin_addr.s_addr = htonl(INADDR_ANY),
 		.sin_port = htons(PORT+2),
@@ -63,6 +37,42 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 	sock_in.sin_addr.s_addr=htonl(-1); /* send message to 255.255.255.255 */
 	sock_in.sin_port = htons(BROADCAST_PORT); /* port number */
 	sock_in.sin_family = AF_INET;
+
+	char acceptMsg[MAXLINE];
+
+	while(groupCount < MSGCOUNT) {
+		for(int i = 0; i < PLAYERS; i++) {
+			if(FD_ISSET(playerfds[i],read_set)) {
+				CliPacket cliMessage;
+
+				bytesRead = recvfrom(playerfds[i], &cliMessage, sizeof(cliMessage), 0,(SA *)cliaddr, clilen);
+				debug("Received message on file descriptor %i", playerfds[i]);
+				debug("Message is: %s", cliMessage.message);
+
+				if(!isalnum(cliMessage.message[0]))
+					continue;
+
+				sprintf(group[groupCount],"\t%s: %s",cliMessage.name,cliMessage.message);
+
+				int clilen; clilen = sizeof(*cliaddr);
+				//char *acceptMsg = (groupCount == MSGCOUNT - 1)? "not accepting" : "accepting";
+				if(groupCount == MSGCOUNT - 1) 
+					sprintf(acceptMsg,"%s:%s",cliMessage.name,"not accepting");
+				else
+					sprintf(acceptMsg,"%s:%s",cliMessage.name,"accepting");
+
+				
+				//sendto(playerfds[i], acceptMsg, strlen(acceptMsg), 0, (SA *)cliaddr, clilen);
+				sendto(BROADCAST_PORT, acceptMsg, strlen(acceptMsg), 0, (SA *)cliaddr, clilen);
+				groupCount++;
+
+				addClientToList(&cliMessage,cliaddr,playerList);
+				debug("After addClientToList");
+			}
+		}
+	}
+
+	// Broadcast the stored messages
 
 	for(int i = 0; i < PLAYERS; i++) {
 		status = sendto(sock, group[i],2*MAXLINE + 10 , 0, (struct sockaddr *)&sock_in, sizeof(sock_in));
@@ -129,4 +139,21 @@ void addClientToList(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Play
 
 	if(!inList(newPlayerMesg,playerList))
 		insert(newPlayerMesg,cliaddr,playerList);
+}
+
+int isPacketMine(char *name, char *recvline, char *statString) {
+
+	char packetName[MAXLINE];
+
+	sscanf(recvline,"%s:%s",packetName,statString);
+		
+	if(strcmp(name,packetName) == 0)
+		return 1;
+	else {
+		memset(statString,'\0',MAXLINE);
+		return 0;
+	}
+
+
+
 }

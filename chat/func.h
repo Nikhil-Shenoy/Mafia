@@ -13,7 +13,6 @@
 
 #include "client.h"
 #include "dbg.h"
-#include "func.h"
 #include "list.h"
 #include "player.h"
 #include "vars.h"

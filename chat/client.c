@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
 	char mesg[MAXLINE];
 	char recvline[2*MAXLINE];
 	char name[MAXLINE];
+	char statString[MAXLINE];
 
 	bool chatDone = false;
 	bool serverAccepts = true;
@@ -62,14 +63,18 @@ int main(int argc, char *argv[]) {
 			fgets(mesg,MAXLINE,stdin);
 			sendCliPacket(name,mesg,sockfd,&servaddr);
 
-			bytesRead = recvfrom(sockfd,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
+			//bytesRead = recvfrom(BROADCAST_PORT,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
+		
+			while(!isPacketMine(name,recvline,statString)) 
+				bytesRead = recvfrom(BROADCAST_PORT,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
 
-			if(strcmp(recvline,"accepting") != 0)
+
+			if(strcmp(statString,"accepting") != 0)
 				serverAccepts = false;
 			else
 				printf("Received %u bytes.\n"
 				       "Response is %s\n\n",
-				       bytesRead,recvline);
+				       bytesRead,statString);
 		}
 
 		while(strcmp(recvline,"end stream") != 0) {
