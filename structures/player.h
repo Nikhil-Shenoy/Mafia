@@ -25,9 +25,9 @@ typedef struct playerList PlayerList;
 	
 void init_player(Player *newPlayer);
 
-void insert(char *name, PlayerList *list);
-void remove(char *name, PlayerList *list);
-Player *find(char *name);
-void print(PlayerList *list);
+void listInsert(char *name, PlayerList *list);
+void listRemove(char *name, PlayerList *list);
+Player *listFind(char *name);
+void listPrint(PlayerList *list);
 
 

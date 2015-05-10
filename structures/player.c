@@ -12,7 +12,7 @@ void init_player(Player *newPlayer) {
 	newPlayer->next = NULL;
 }
 
-void insert(char *name, PlayerList *list) {
+void listInsert(char *name, PlayerList *list) {
 
 	Player *newPlayer = (Player *)malloc(sizeof(Player));
 	init_player(newPlayer);
@@ -30,19 +30,49 @@ void insert(char *name, PlayerList *list) {
 		cur->next = newPlayer;
 }
 
-void remove(char *name, PlayerLlist *list) {
+void listRemove(char *name, PlayerLlist *list) {
 
 	Player *cur = list->head;
+	Player *prev = list->head;
+	cur = cur->next;
+	
+	while((strcmp(name,cur->name) != 0) && (cur != NULL)) {
+		cur = cur->next;
+		prev = prev->next;
+	}
 
 	if(cur == NULL) {
 		printf("No players in the list\n");
 		return;
+	} else if(cur->next == NULL) {
+		prev->next = NULL;
+		cur->next = NULL;
+		free(cur);
+		return;
+	} else {
+		prev->next = cur->next;
+		cur->next = NULL;
+		free(cur);
+		return;
 	}
+				
+}	
 
-	while((strcmp(name,cur->name) != 0) && (cur != NULL))
-		cur = cur->next;
+Player *listFind(char *name, PlayerList *list) {
+	Player *cur;
+	cur = list->head;
 
-	
+	while(cur != NULL) {
 		
+
+
+
+
+
+
+
+
+
+
 
 	
