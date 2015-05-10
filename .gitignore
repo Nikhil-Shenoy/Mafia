@@ -1,5 +1,4 @@
 *.o
 client
-second
 server
 *.swp

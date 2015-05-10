@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "player.h"
-#include "cliHelp.h"
+#include "list.h"
 
 // returns 1 if in list, 0 otherwise
 

@@ -11,7 +11,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "cliHelp.h"
+#include "client.h"
 #include "dbg.h"
 #include "func.h"
 #include "list.h"
