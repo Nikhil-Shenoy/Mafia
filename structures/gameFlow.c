@@ -133,6 +133,70 @@ void whoWillYouInvestigate(PlayerList *players) {
 	return;
 }
 
+void collectVotes(PlayerList *players) {
+
+	bool allVotesCollected = false;
+
+	char *votes[players->size];
+	int i = 0;
+	/*
+	while(!allVotesCollected) {
+		receive a client's vote
+
+		if(strncasecmp("cast vote",response,9) == 0) {
+			extract vote
+			votes[i] = vote;
+		}
+	
+		if(i == players->size)
+			allVotesCollected = true;
+		else
+			i++;
+	}
+
+	*/
+
+	Player *cur;
+	cur = players->head;
+	i = 0;
+
+	int counts[players->size];
+	for(i = 0; i < players->size; i++) 
+		counts[i] = 0;
+
+	// Collect frequency of votes
+
+	i = 0;
+	while(cur != NULL) {
+		for(int j = 0; j < players->size; j++) {
+			if(strncasecmp(vote[i],cur->name,strlen(cur->name)) == 0)
+				counts[i]++;
+		}
+
+		cur = cur->next;
+		i++;
+	}		
+
+	int index = max(counts,players->size);
+
+	cur = players->head;
+	i = 0;
+	while(i != index) {
+		cur = cur->next;
+		i++;
+	}	
+
+	if(!(cur->saved))
+		cur->alive = false;
+
+
+}
+
+
+	
+		
+	
+
 
 
 
