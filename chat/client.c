@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 
 			bytesRead = recvfrom(sockfd,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
 
-			if(strcmp(recvline,"accepting") != 0)
+			if(!streq(recvline,"accepting"))
 				serverAccepts = false;
 			else
 				printf("Received %u bytes.\n"
@@ -72,9 +72,9 @@ int main(int argc, char *argv[]) {
 				       bytesRead,recvline);
 		}
 
-		while(strcmp(recvline,"end stream") != 0) {
+		while(!streq(recvline,"end stream")) {
 			bytesRead = recvfrom(broadSock,recvline,2*MAXLINE+10,0,(struct sockaddr *)&servaddr,&length);
-			if(strcmp(recvline,"end stream") != 0) {
+			if(!streq(recvline,"end stream")) {
 				printf("%s\n",recvline);
 				memset(recvline,'\0',2*MAXLINE);
 			}
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 		memset(recvline,'\0',2*MAXLINE);
 
 		bytesRead = recvfrom(broadSock,recvline,2*MAXLINE,0,(struct sockaddr *)&servaddr,&length);
-		if(strcmp(recvline,"accepting") == 0)
+		if(streq(recvline,"accepting"))
 			serverAccepts = true;
 	}
 

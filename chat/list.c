@@ -5,7 +5,7 @@
 int inList(CliPacket *newClient, Player **playerList, int len) {
 	for(int i = 0; i < len; i++) {
 		if((playerList[i] != NULL) &&
-		   (strcmp(newClient->name,playerList[i]->name) == 0)) {
+		   streq(newClient->name,playerList[i]->name)) {
 			return i;
 		}
 	}
@@ -13,7 +13,9 @@ int inList(CliPacket *newClient, Player **playerList, int len) {
 	return -1;
 }
 
-void insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList, int len) {
+// Add newPlayerMesg to playerList.
+// Returns true on success, false on failure
+bool insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList, int len) {
 	for(int i = 0; i < len; i++) {
 		if(playerList[i] == NULL) {
 			playerList[i] = (Player *)malloc(sizeof(Player));
@@ -24,15 +26,21 @@ void insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **play
 			strcpy(playerList[i]->message,newPlayerMesg->message);
 			memcpy(&(playerList[i]->playerInfo),cliaddr,sizeof(*cliaddr));
 
-			return;
+			return true;
 		}
 	}
+
+	return false;
 }
 
-void update(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList, int len) {
+// Add newPlayerMesg to playerList if it's not already in there, or
+// updates the player if it's already there.
+// Returns true on success, false on failure
+bool update(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList, int len) {
 	int loc = inList(newPlayerMesg, playerList, len);
 	if (loc == -1)
-		insert(newPlayerMesg, cliaddr, playerList, len);
-	else
-		strncpy(playerList[loc]->message,newPlayerMesg->message, MAXLINE*2);
+		return insert(newPlayerMesg, cliaddr, playerList, len);
+
+	strncpy(playerList[loc]->message,newPlayerMesg->message, MAXLINE*2);
+	return true;
 }
