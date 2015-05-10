@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include "func.h"
 #include "player.h"
-#include "vars.h"
+#include "util.h"
 
 Player *playerList[PLAYERS];
 

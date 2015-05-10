@@ -66,8 +66,7 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 				sendto(BROADCAST_PORT, acceptMsg, strlen(acceptMsg), 0, (SA *)cliaddr, clilen);
 				groupCount++;
 
-				addClientToList(&cliMessage,cliaddr,playerList);
-				debug("After addClientToList");
+				update(&cliMessage, cliaddr, playerList, PLAYERS);
 			}
 		}
 	}
@@ -134,13 +133,6 @@ void initPlayerList(Player **playerList) {
 		playerList[i] = NULL;
 }
 
-// If player is not in the list, add him to the first Null spot.
-void addClientToList(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList) {
-
-	if(!inList(newPlayerMesg,playerList))
-		insert(newPlayerMesg,cliaddr,playerList);
-}
-
 int isPacketMine(char *name, char *recvline, char *statString) {
 
 	char packetName[MAXLINE];
@@ -157,3 +149,4 @@ int isPacketMine(char *name, char *recvline, char *statString) {
 
 
 }
+

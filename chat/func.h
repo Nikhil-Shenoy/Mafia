@@ -15,7 +15,7 @@
 #include "dbg.h"
 #include "list.h"
 #include "player.h"
-#include "vars.h"
+#include "util.h"
 
 typedef struct sockaddr SA;
 
@@ -23,7 +23,6 @@ void init_sockets(int *playerfds, struct sockaddr_in *servaddr);
 void handle_connection(int *playerfds, fd_set *read_set, struct sockaddr_in *cliaddr, socklen_t *clilen, Player **playerList);
 void add_to_set(int *playerfds, int len, fd_set *read_set);
 int max(int *arr, int len);
-void addClientToList(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList);
 void initPlayerList(Player **playerList);
 
 #endif

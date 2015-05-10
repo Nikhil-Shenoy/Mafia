@@ -3,14 +3,14 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "player.h"
 #include "client.h"
 
-int inList(CliPacket *name, Player **playerList);
-void insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList);
+int inList(CliPacket *name, Player **playerList, int len);
+bool insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList, int len);
+bool update(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList, int len);
 
 #endif
