@@ -193,8 +193,19 @@ void collectVotes(PlayerList *players) {
 }
 
 
-	
+void apply(void (*a)(),PlayerList *players) {
+
+	Player *cur = players->head;
+	for(int i = 0; i < players->size; i++) {
+		a(cur);
+		cur = cur->next;
+	}
 		
+}
+
+void kill(Player *player) {
+	player->alive = false;
+}		
 	
 
 
