@@ -37,8 +37,9 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 				sendto(playerfds[i], acceptMsg, strlen(acceptMsg), 0, (SA *)cliaddr, clilen);
 				groupCount++;
 
-				addClientToList(&cliMessage,cliaddr,playerList);
-
+				if(!inList(&cliMessage,playerList))
+					insert(&cliMessage,cliaddr,playerList);
+debug("End of loop");
 			}
 		}
 	}
@@ -122,11 +123,4 @@ int max(int *arr, int len) {
 void initPlayerList(Player **playerList) {
 	for(int i = 0; i < PLAYERS; i++)
 		playerList[i] = NULL;
-}
-
-// If player is not in the list, add him to the first Null spot.
-void addClientToList(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList) {
-
-	if(!inList(newPlayerMesg,playerList))
-		insert(newPlayerMesg,cliaddr,playerList);
 }
