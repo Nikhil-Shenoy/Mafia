@@ -12,10 +12,8 @@
 int inList(CliPacket *newClient, Player **playerList) {
 
 	int i;
-	for(i = 0; i < 10; i++) {
+	for(i = 0; i < PLAYERS; i++) {
 		if((playerList[i] != NULL) && (strcmp(newClient->name,playerList[i]->name) == 0)) {
-			memset(playerList[i]->message,'\0',MAXLINE);
-			strcpy(playerList[i]->message,newClient->message);
 			return 1;
 		}
 	}
@@ -26,7 +24,7 @@ int inList(CliPacket *newClient, Player **playerList) {
 void insert(CliPacket *newPlayerMesg, struct sockaddr_in *cliaddr, Player **playerList) {
 	
 	int i;
-	for(i = 0; i < 10; i++) {
+	for(i = 0; i < PLAYERS; i++) {
 		if(playerList[i] == NULL) {
 			playerList[i] = (Player *)malloc(sizeof(Player));
 			memset(playerList[i],'\0',sizeof(Player));

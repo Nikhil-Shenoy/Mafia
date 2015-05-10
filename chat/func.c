@@ -38,7 +38,7 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 				groupCount++;
 
 				addClientToList(&cliMessage,cliaddr,playerList);
-
+				debug("After addClientToList");
 			}
 		}
 	}
@@ -61,7 +61,7 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 	debug("Setsockopt Status: %d", status);
 
 	sock_in.sin_addr.s_addr=htonl(-1); /* send message to 255.255.255.255 */
-	sock_in.sin_port = htons(PORT+1); /* port number */
+	sock_in.sin_port = htons(BROADCAST_PORT); /* port number */
 	sock_in.sin_family = AF_INET;
 
 	for(int i = 0; i < PLAYERS; i++) {
