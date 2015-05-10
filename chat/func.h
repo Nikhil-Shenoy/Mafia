@@ -16,7 +16,7 @@
 #include "func.h"
 #include "list.h"
 #include "player.h"
-#include "vars.h"
+#include "util.h"
 
 typedef struct sockaddr SA;
 

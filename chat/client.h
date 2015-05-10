@@ -10,7 +10,7 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include "dbg.h"
-#include "vars.h"
+#include "util.h"
 
 typedef struct _cliPacket {
 	char name[MAXLINE];
