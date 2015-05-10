@@ -37,8 +37,7 @@ void handle_connection(int *playerfds, fd_set *read_set,struct sockaddr_in *clia
 				sendto(playerfds[i], acceptMsg, strlen(acceptMsg), 0, (SA *)cliaddr, clilen);
 				groupCount++;
 
-				if(!inList(&cliMessage,playerList))
-					insert(&cliMessage,cliaddr,playerList);
+				update(&cliMessage, cliaddr, playerList, PLAYERS);
 			}
 		}
 	}
