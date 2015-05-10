@@ -15,7 +15,6 @@ int main(int argc, char *argv[]) {
 
 	// TODO: Display IP address. Distribute to clients
 
-	int sockfd;
 	struct sockaddr_in servaddr, cliaddr;
 
 	// Initialize server struct

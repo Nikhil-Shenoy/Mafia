@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 	int broadSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 	broadaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	broadaddr.sin_port = htons(PORT+1);
+	broadaddr.sin_port = htons(BROADCAST_PORT);
 	broadaddr.sin_family = AF_INET;
 
 	int status;
