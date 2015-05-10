@@ -7,13 +7,21 @@
 #include <arpa/inet.h>
 #include "../chat/util.h"
 
+typedef enum role {
+	ROLE_TOWNSPERSON=0,
+	ROLE_MAFIA,
+	ROLE_COP,
+	ROLE_DOCTOR
+} Role;
+
+
 struct player {
 	bool alive;
 	bool saved;
 	struct sockaddr_in connInfo;
 	int fd;
 	char name[MAXLINE];
-	char role[MAXLINE];
+	enum role role;
 	struct player *next;
 };
 

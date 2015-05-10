@@ -51,6 +51,108 @@ void assignRoles(PlayerList *players) {
 	cur->role = ROLE_DOCTOR;
 }
 
+void whoWillYouKill(PlayerList *players) {
+
+	char mafiaMesg[] = "Hello Mafioso! The living players are:\n";
+	
+	char living[players->size][MAXLINE];
+	memset(living,'\0',(players->size)*MAXLINE);
+
+
+	Players *cur = players->head;
+	for(int i = 0; i < players->size; cur = cur->next) {
+		living[i][0] = '\t';
+		strcat(living[i],cur->name);
+	}
+
+	char command[] = "\nWho do you want to kill?\n--> ";
+
+	// Insert receive command for processing
+
+	Player *toKill = listFind(/*name*/,players);
+	if(!(toKill->saved))
+		toKill->alive = false;
+
+}
+
+void whoWillYouSave(PlayerList *players) {
+
+	char doctorMesg[] = "Hello Doctor! The living players are:\n";
+	
+	char living[players->size][MAXLINE];
+	memset(living,'\0',(players->size)*MAXLINE);
+
+
+	Players *cur = players->head;
+	for(int i = 0; i < players->size; cur = cur->next) {
+		living[i][0] = '\t';
+		strcat(living[i],cur->name);
+	}
+
+	char command[] = "\nWho do you want to save?\n--> ";
+
+	// Insert receive command for processing
+	
+	Player *toSave = listFind(/*name*/,players);
+	toSave->saved = true;
+
+	return;
+}
+
+void whoWillYouInvestigate(Playerlist *players) {
+	
+	char copMesg[] = "Hello Cop! The living players are:\n";
+	
+	char living[players->size][MAXLINE];
+	memset(living,'\0',(players->size)*MAXLINE);
+
+
+	Players *cur = players->head;
+	for(int i = 0; i < players->size; cur = cur->next) {
+		living[i][0] = '\t';
+		strcat(living[i],cur->name);
+	}
+
+	char command[] = "\nWho do you want to investigate?\n--> ";
+
+	// Insert receive command for processing
+	
+	Player *toInvestigate = listFind(/*name*/,players);
+
+	if(toInvestigate->role == ROLE_MAFIA)
+		// send yes
+	else
+		// send no
+
+	return;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

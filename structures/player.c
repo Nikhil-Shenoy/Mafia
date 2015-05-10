@@ -9,7 +9,7 @@ void init_player(Player *newPlayer) {
 	newPlayer->fd = -1;
 	memset(&(newPlayer->connInfo),'\0',sizeof(newPlayer->connInfo));
 	memset(newPlayer->name,'\0',MAXLINE);
-	memset(newPlayer->role,'\0',MAXLINE);
+	newPlayer->role = ROLE_TOWNSPERSON;
 	newPlayer->next = NULL;
 }
 
@@ -22,13 +22,15 @@ void listInsert(char *name, PlayerList *list) {
 
 	Player *cur = list->head;
 
-	if(cur == NULL) 
+	if(cur == NULL) {
 		list->head = newPlayer;
-	else {
+		list->size++;
+	} else {
 		while(cur->next != NULL)
 			cur = cur->next;
 
 		cur->next = newPlayer;
+		list->size++;
 	}
 }
 
@@ -84,6 +86,7 @@ void listPrint(PlayerList *list) {
 	
 		cur = cur->next;
 	}
+	printf("\n");
 }
 
 void listDestroy(PlayerList *list) {
@@ -101,7 +104,10 @@ void listDestroy(PlayerList *list) {
 	}
 }
 
-
+void init_list(PlayerList *list) {
+	list->head = NULL;
+	list->size = 0;
+}
 
 
 
