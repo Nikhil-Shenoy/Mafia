@@ -1,58 +1,127 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
-#include <strings.h>
-#include <sys/socket.h>
+#include <unistd.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
-#include "func.h"
-#include "player.h"
+#include <arpa/inet.h>
+#include <netdb.h>
+#include "dbg.h"
 #include "util.h"
+#include "sock.h"
+//#include "../structures/player.h"
 
-Player *playerList[PLAYERS];
+// TEMPORARY
+typedef struct player {
+	bool alive;
+	bool saved;
+	struct sockaddr_in connInfo;
+	int fd;
+	char *name;
+	char role[MAXLINE];
+	struct player *next;
+} Player;
 
-int main(int argc, char *argv[]) {
+Player *clients[PLAYERS];
 
-	// TODO: Display IP address. Distribute to clients
+static bool keep_on_truckin = true;
+char* welcome_message = "Welcome to Mafia!\nPlease enter your name: ";
 
-	struct sockaddr_in servaddr, cliaddr;
+int main(void)
+{
+	char recvbuf[MAXLINE];
+	char sendbuf[MAXLINE*2];
+	int nbytes;
 
-	// Initialize server struct
-	bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(PORT);
+	fd_set master;
+	FD_ZERO(&master);
+	fd_set read_fds;
+	FD_ZERO(&read_fds);
 
-	fd_set read_set;
-	int fdmax;
+	int listenfd = open_listenfd(PORT);
+	check((listenfd != -1), "failed to bind port");
 
-	// Create client sockets and bind
-	int playerfds[PLAYERS];
-	init_sockets(playerfds,&servaddr);
+	FD_SET(listenfd, &master);
+	int fdmax = listenfd;
 
-	// Initialize file descriptor set
-	FD_ZERO(&read_set);
+	// Start up a chat server that runs until everyone is ready
+	int num_clients = 0;
+	while(keep_on_truckin && num_clients <= PLAYERS) {
+		read_fds = master; // I don't really know why we need to do this
+		check((select(fdmax+1, &read_fds, NULL, NULL, NULL) != -1), "select");
 
-	fdmax = max(playerfds, PLAYERS) + 1;
+		// run through the existing connections looking for data to read
+		for(int i = 0; i <= fdmax; i++) {
+			if (FD_ISSET(i, &read_fds)) {
+				// New connection
+				if (i == listenfd) {
+					int newfd = loggedAccept(listenfd);
+					if (newfd == -1)
+						continue;
 
-	bzero(&cliaddr,sizeof(cliaddr));
-	socklen_t clilen = sizeof(cliaddr);
-	int nready; nready = 0;
+					FD_SET(newfd, &master); // add to master set
+					if (newfd > fdmax) {	// keep track of the max
+						fdmax = newfd;
+					}
 
-	initPlayerList(playerList);
+					robustSend(newfd, welcome_message, strlen(welcome_message));
+					clients[num_clients] = malloc(sizeof(Player));
+					clients[num_clients]->fd = newfd;
+					clients[num_clients]->name = NULL;
 
-	for(; ;) {
-		add_to_set(playerfds, PLAYERS, &read_set);
+					num_clients++;
+				}
 
-		if((nready = select(fdmax,&read_set,NULL,NULL,NULL)) < 0) {
-			fprintf(stderr,"Error in select. Continuing...\n");
-			continue;
+				// Received message
+				else {
+					if ((nbytes = recv(i, recvbuf, sizeof recvbuf, 0)) <= 0) {
+						// got error or connection closed by client
+						if (nbytes == 0) {
+							// connection closed
+							log_info("socket %d hung up", i);
+						} else {
+							perror("recv");
+						}
+						close(i); // bye!
+						FD_CLR(i, &master); // remove from master set
+						continue;
+					}
+
+					Player *sender = NULL;
+					for(int j = 0; j <= PLAYERS; j++ ) {
+						if (clients[j]->fd == i) {
+							sender = clients[j];
+							break;
+						}
+					}
+
+					// If a player's name isn't set yet, do so now.
+					if (sender->name == NULL) {
+						recvbuf[nbytes-2] = '\0';
+						sender->name = malloc(MAXLINE);
+						strcpy(sender->name, recvbuf);
+					} else {
+						nbytes = sprintf(sendbuf, "%s: %s", sender->name, recvbuf);
+						for(int j = 0; j <= PLAYERS; j++) {
+							// Send message to everyone except the
+							// server (listenfd) and the sender (i)
+							if (clients[j] &&
+								FD_ISSET(clients[j]->fd, &master) &&
+								clients[j]->fd != listenfd &&
+								clients[j]->fd != i &&
+								clients[j]->name) {
+								robustSend(clients[j]->fd, sendbuf, nbytes);
+							}
+						}
+					}
+				}
+			}
 		}
-
-		handle_connection(playerfds, &read_set, (struct sockaddr_in *)&cliaddr, &clilen, playerList);
-
 	}
 
 	return 0;
-
+error:
+	return 1;
 }
