@@ -9,9 +9,10 @@
 void assignRoles(PlayerList *players);
 void describeRole(Player *p, void *aux);
 void doAction(PlayerList *players, Role r);
-void collectVotes(PlayerList *players);
 void resetSaved(Player *p, void *aux);
 void resetVote(Player *p, void *aux);
 void printVotes(Player *p, void *aux);
+bool townspeopleVictory(PlayerList *players);
+bool mafiaVictory(PlayerList *players);
 
 #endif

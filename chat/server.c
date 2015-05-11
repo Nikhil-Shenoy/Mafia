@@ -20,6 +20,11 @@ static int listenfd;
 static bool keep_on_truckin = true;
 char* welcome_message = "Welcome to Mafia!\nPlease enter your name: ";
 char* night_message = "It is nighttime.\n";
+char* vote_message = "The town decides to sit down and have a good ol' fashioned lynching.\n"
+	"Who will you vote for?\n";
+char* tied_message = "There was a tie! You'll need to hold a new vote.\n";
+char* mafia_victory_message = "The mafia wins!";
+char* townspeople_victory_message = "The townspeople win!";
 
 int newConnection(fd_set *fdset, int listenfd, void *aux) {
 	(void)aux;
@@ -51,7 +56,8 @@ void broadcastMessage(Player *p, void *aux) {
 	}
 }
 
-bool readinessCommandler(char *command, void *aux) {
+bool readinessCommandler(Player *p, char *command, void *aux) {
+	(void)p;
 	int *num_ready = aux;
 	if (strncmp(command, "ready", 5) == 0) {
 		(* num_ready)++;
@@ -61,39 +67,34 @@ bool readinessCommandler(char *command, void *aux) {
 	return false;
 }
 
-struct vote_obj {
-	int *num_votes;
-	Player *voter;
-};
-
-bool voteCommandler(char *command, void *aux) {
+bool voteCommandler(Player *p, char *command, void *aux) {
 	if (strlen(command) <= 5)
 		return false;
 
-	struct vote_obj *args = aux;
+	int *num_votes = aux;
 	if (strncmp(command, "vote", 4) == 0) {
 		Player *vote = listFind(command+5, clients);
 		char sendbuf[MAXLINE];
 
 		if (!vote) {
-			debug("Player %s voted to kill %s, who does not exist", args->voter->name, command+5);
+			debug("Player %s voted to kill %s, who does not exist", p->name, command+5);
 			int nbytes = sprintf(sendbuf, "Player %s does not exist\n", command+5);
-			robustSend(args->voter->fd, sendbuf, nbytes);
+			robustSend(p->fd, sendbuf, nbytes);
 
 		} else if (!vote->alive) {
-			debug("Player %s voted to kill %s, who is already dead.", args->voter->name, command+5);
+			debug("Player %s voted to kill %s, who is already dead.", p->name, command+5);
 			int nbytes = sprintf(sendbuf, "Player %s is already dead\n", command+5);
-			robustSend(args->voter->fd, sendbuf, nbytes);
+			robustSend(p->fd, sendbuf, nbytes);
 
 		} else {
-			if (args->voter->cur_vote) {
+			if (p->cur_vote) {
 				debug("Player %s changed their vote from %s to %s",
-					  args->voter->name, args->voter->cur_vote->name, vote->name);
+					  p->name, p->cur_vote->name, vote->name);
 			} else {
-				debug("Player %s voted to kill %s", args->voter->name, vote->name);
-				(* args->num_votes)++;
+				debug("Player %s voted to kill %s", p->name, vote->name);
+				(* num_votes)++;
 			}
-			args->voter->cur_vote = vote;
+			p->cur_vote = vote;
 		}
 
 		return true;
@@ -103,7 +104,7 @@ bool voteCommandler(char *command, void *aux) {
 
 struct chatLoop_obj {
 	void *aux;
-	bool (*commandler)(char *command, void *aux);
+	bool (*commandler)(Player *p, char *command, void *aux);
 };
 
 int chatLoop(fd_set *fdset, int cur_fd, void *aux) {
@@ -140,7 +141,7 @@ int chatLoop(fd_set *fdset, int cur_fd, void *aux) {
 		debug("FD %d is now %s.", cur_fd, sender->name);
 	} else if (recvbuf[0] == '/') {
 		struct chatLoop_obj *args = aux;
-		if (!args->commandler(recvbuf+1, args->aux)) {
+		if (!args->commandler(sender, recvbuf+1, args->aux)) {
 			char invalid[] = "Invalid command.\n";;
 			robustSend(cur_fd, invalid, strlen(invalid));
 		}
@@ -178,6 +179,18 @@ void findVoteTarget(Player *p, void *aux) {
 		(*args->tied) = true;
 }
 
+bool winConditionCheck() {
+	if (mafiaVictory(clients)) {
+		listSend(clients, mafia_victory_message, strlen(mafia_victory_message));
+		return true;
+	}
+	if (townspeopleVictory(clients)) {
+		listSend(clients, mafia_victory_message, strlen(mafia_victory_message));
+		return true;
+	}
+	return false;
+}
+
 int main(void)
 {
 	fd_set master;
@@ -213,6 +226,7 @@ int main(void)
 	// If we add more mafioso, we'd need to tell them who they are
 	// here.
 
+	char sendbuf[MAXLINE];
 	while(keep_on_truckin && !game_over) {
 		// Nighttime
 		listSend(clients, night_message, strlen(night_message));
@@ -221,7 +235,14 @@ int main(void)
 		doAction(clients, ROLE_MAFIA);
 		listApply(&resetSaved, clients, NULL);
 
+		if (winConditionCheck())
+			return 0;
+
 		// Daytime
+		listSend(clients, vote_message, strlen(vote_message));
+		memset(sendbuf,'\0',MAXLINE);
+		listSprint(sendbuf, clients);
+		listSend(clients, sendbuf, strlen(sendbuf));
 		int num_votes;
 		struct chatLoop_obj voteLoop_args = {
 			.aux = (void *)&num_votes,
@@ -244,17 +265,18 @@ int main(void)
 			voteTarget_args.max = NULL;
 			listApply(&findVoteTarget, clients, (void *)&voteTarget_args);
 			if (tied) {
-				//tell peeps
+				listSend(clients, tied_message, strlen(tied_message));
 			} else {
 				voteTarget_args.max->alive = false;
-				//tell peeps
+				int nbytes = sprintf(sendbuf, "The town lynches %s\n", voteTarget_args.max->name);
+				listSend(clients, sendbuf, nbytes);
 			}
 
 			listApply(&resetVote, clients, NULL);
 		} while(tied);
 
-		// Victory Condition check
-		return 0;
+		if (winConditionCheck())
+			return 0;
 	}
 
 	return 0;

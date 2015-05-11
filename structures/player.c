@@ -152,3 +152,9 @@ int listNumAlive(PlayerList *players) {
 	listApply(&__alive, players, (void *)&num_alive);
 	return num_alive;
 }
+
+int listNumAliveOf(PlayerList *players, Role r) {
+	int num_alive = 0;
+	listApplyTo(&__alive, players, r, (void *)&num_alive);
+	return num_alive;
+}

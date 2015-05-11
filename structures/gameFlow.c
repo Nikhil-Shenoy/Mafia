@@ -1,16 +1,6 @@
 #include "gameFlow.h"
 
 
-int arrayMax(int *arr, int len) {
-	int max = -1;
-	for(int i = 0; i < len; i++) {
-		if(arr[i] > max)
-			max = arr[i];
-	}
-
-	return max;
-}
-
 void assignRoles(PlayerList *players) {
 
 	int numPlayers = players->size;
@@ -73,6 +63,8 @@ void describeRole(Player *p, void *aux) {
 
 void receiveAction(Player *p, void *aux) {
 	PlayerList *players = aux;
+	if (!p->alive)
+		return;
 
 	char sendbuf[MAXLINE];
 	char recvbuf[MAXLINE];
@@ -137,65 +129,6 @@ void doAction(PlayerList *players, Role r) {
 	listApplyTo(&receiveAction, players, r, (void *)players);
 }
 
-void collectVotes(PlayerList *players) {
-
-	bool allVotesCollected = false;
-
-	char *votes[players->size];
-	int i = 0;
-	/*
-	while(!allVotesCollected) {
-		receive a client's vote
-
-		if(strncasecmp("cast vote",response,9) == 0) {
-			extract vote
-			votes[i] = vote;
-		}
-
-		if(i == players->size)
-			allVotesCollected = true;
-		else
-			i++;
-	}
-
-	*/
-
-	Player *cur;
-	cur = players->head;
-	i = 0;
-
-	int counts[players->size];
-	for(i = 0; i < players->size; i++)
-		counts[i] = 0;
-
-	// Collect frequency of votes
-
-	i = 0;
-	while(cur != NULL) {
-		for(int j = 0; j < players->size; j++) {
-			if(strncasecmp(votes[i],cur->name,strlen(cur->name)) == 0)
-				counts[i]++;
-		}
-
-		cur = cur->next;
-		i++;
-	}
-
-	int index = arrayMax(counts,players->size);
-
-	cur = players->head;
-	i = 0;
-	while(i != index) {
-		cur = cur->next;
-		i++;
-	}
-
-	if(!(cur->saved))
-		cur->alive = false;
-
-
-}
-
 void resetSaved(Player *p, void *aux) {
 	(void)aux;
 
@@ -222,4 +155,13 @@ void printVotes(Player *p, void *aux) {
 	listSend(players, sendbuf, nbytes);
 
 	p->cur_vote->kill_votes++;
+}
+
+bool townspeopleVictory(PlayerList *players) {
+	return listNumAliveOf(players, ROLE_MAFIA) == 0;
+}
+
+bool mafiaVictory(PlayerList *players) {
+	int live_mafia = listNumAliveOf(players, ROLE_MAFIA);
+	return live_mafia >= (listNumAlive(players) - live_mafia);
 }

@@ -68,5 +68,6 @@ void listSend(PlayerList *players, char *msg, int length);
 void listSendTo(PlayerList *players, Role r, char *msg, int length);
 void listApplyTo(void (*a)(Player *p, void *aux),PlayerList *players, Role r, void *aux);
 int listNumAlive(PlayerList *players);
+int listNumAliveOf(PlayerList *players, Role r);
 
 #endif
