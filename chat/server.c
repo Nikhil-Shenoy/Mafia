@@ -257,10 +257,10 @@ int main(void)
 			return 0;
 
 		// Daytime
-		listSend(clients, vote_message, strlen(vote_message));
+		listSendAlive(clients, vote_message, strlen(vote_message));
 		memset(sendbuf,'\0',MAXLINE);
 		listSprint(sendbuf, clients);
-		listSend(clients, sendbuf, strlen(sendbuf));
+		listSendAlive(clients, sendbuf, strlen(sendbuf));
 		int num_votes;
 		struct chatLoop_obj voteLoop_args = {
 			.aux = (void *)&num_votes,

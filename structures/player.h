@@ -65,6 +65,7 @@ int listSprint(char *buf, PlayerList *list);
 void listDestroy(PlayerList *list);
 void listApply(void (*a)(Player *p, void *aux),PlayerList *players, void *aux);
 void listSend(PlayerList *players, char *msg, int length);
+void listSendAlive(PlayerList *players, char *msg, int length);
 void listSendTo(PlayerList *players, Role r, char *msg, int length);
 void listApplyTo(void (*a)(Player *p, void *aux),PlayerList *players, Role r, void *aux);
 int listNumAlive(PlayerList *players);

@@ -138,6 +138,15 @@ void listSend(PlayerList *players, char *msg, int length) {
 }
 
 // Author: Daniel
+void listSendAlive(PlayerList *players, char *msg, int length) {
+	for(Player *cur = players->head; cur; cur = cur->next) {
+		if (!cur->alive)
+			continue;
+		robustSend(cur->fd, msg, length);
+	}
+}
+
+// Author: Daniel
 void listApplyTo(void (*a)(Player *p, void *aux), PlayerList *players, Role r, void *aux) {
 	for(Player *cur = players->head; cur; cur = cur->next) {
 		if (cur->role != r)
@@ -149,7 +158,7 @@ void listApplyTo(void (*a)(Player *p, void *aux), PlayerList *players, Role r, v
 // Author: Daniel
 void listSendTo(PlayerList *players, Role r, char *msg, int length) {
 	for(Player *cur = players->head; cur; cur = cur->next) {
-		if (cur->role != r)
+		if (cur->role != r || !cur->alive)
 			continue;
 		robustSend(cur->fd, msg, length);
 	}
