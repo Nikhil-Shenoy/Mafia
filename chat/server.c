@@ -26,6 +26,7 @@ char* tied_message = "There was a tie! You'll need to hold a new vote.\n";
 char* mafia_victory_message = "The mafia wins!";
 char* townspeople_victory_message = "The townspeople win!";
 
+// Author: Daniel
 int newConnection(fd_set *fdset, int listenfd, void *aux) {
 	(void)aux;
 	int newfd = loggedAccept(listenfd);
@@ -46,6 +47,7 @@ struct broadcast_obj {
 	int nbytes;
 };
 
+// Author: Daniel
 void broadcastMessage(Player *p, void *aux) {
 	struct broadcast_obj *args = aux;
 	debug("Sending message to %d", p->fd);
@@ -56,6 +58,7 @@ void broadcastMessage(Player *p, void *aux) {
 	}
 }
 
+// Author: Daniel
 bool readinessCommandler(Player *p, char *command, void *aux) {
 	(void)p;
 	int *num_ready = aux;
@@ -67,6 +70,7 @@ bool readinessCommandler(Player *p, char *command, void *aux) {
 	return false;
 }
 
+// Author: Daniel
 bool voteCommandler(Player *p, char *command, void *aux) {
 	if (strlen(command) <= 5)
 		return false;
@@ -107,6 +111,7 @@ struct chatLoop_obj {
 	bool (*commandler)(Player *p, char *command, void *aux);
 };
 
+// Author: Daniel
 int chatLoop(fd_set *fdset, int cur_fd, void *aux) {
 	int nbytes;
 	char recvbuf[MAXLINE];
@@ -168,6 +173,7 @@ struct voteTarget_obj {
 	bool *tied;
 };
 
+// Author: Daniel
 void findVoteTarget(Player *p, void *aux) {
 	struct voteTarget_obj *args = aux;
 
@@ -179,6 +185,7 @@ void findVoteTarget(Player *p, void *aux) {
 		(*args->tied) = true;
 }
 
+// Author: Daniel
 bool winConditionCheck() {
 	if (mafiaVictory(clients)) {
 		listSend(clients, mafia_victory_message, strlen(mafia_victory_message));
@@ -191,6 +198,7 @@ bool winConditionCheck() {
 	return false;
 }
 
+// Author: Daniel
 int main(void)
 {
 	fd_set master;

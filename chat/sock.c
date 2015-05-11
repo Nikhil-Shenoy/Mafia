@@ -1,11 +1,7 @@
 #include "sock.h"
 
-// STOLEN FROM CSAPP
-/*
- * open_listenfd - open and return a listening socket on port
- *     Returns -1 and sets errno on Unix error.
- */
-/* $begin open_listenfd */
+// STOLEN FROM CSAPP, but modified
+// Author: Daniel
 int open_listenfd(int port)
 {
     int listenfd, optval=1;
@@ -38,6 +34,7 @@ error:
 	return -1;
 }
 
+// Author: Daniel
 ssize_t robustSend(int fd, void *usrbuf, size_t n)
 {
     size_t nleft = n;
@@ -59,6 +56,7 @@ error:
 
 
 char ipbuf[INET6_ADDRSTRLEN];
+// Author: Daniel
 const char *ipString(struct sockaddr_storage *s_addr) {
 	SA *remoteaddr = (SA *)s_addr;
 	return inet_ntop(remoteaddr->sa_family,
@@ -68,6 +66,7 @@ const char *ipString(struct sockaddr_storage *s_addr) {
 					 ipbuf, INET6_ADDRSTRLEN);
 }
 
+// Author: Daniel
 int loggedAccept(int listenfd) {
 	struct sockaddr_storage remoteaddr;
 	socklen_t addrlen = sizeof(remoteaddr);
@@ -85,34 +84,7 @@ error:
 	return -1;
 }
 
-ssize_t trimmedRecvb(int fd, char *bufp, size_t n)
-{
-    size_t nleft = n;
-    ssize_t nread;
-
-    do {
-		if ((nread = recv(fd, bufp, nleft, 0)) < 0) {
-			check((errno == EINTR), "recv");
-			nread = 0; // start over and call read() again
-		} else if (nread == 0)
-			break; // Done
-		nleft -= nread;
-		bufp += nread;
-    } while (nleft > 0);
-
-	ssize_t length = n - nleft;
-	if (length >= 2) {
-		bufp[length - 2] = '\0';
-		return length - 1;
-	}
-
-    return length;
-error:
-	perror("recv");
-	return -1;
-}
-
-
+// Author: Daniel
 ssize_t trimmedRecv(int fd, char *bufp, size_t n)
 {
     size_t nleft = n;

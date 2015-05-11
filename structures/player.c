@@ -3,6 +3,7 @@
 #include "../chat/util.h"
 #include "player.h"
 
+// Author: Nikhil
 void init_player(Player *newPlayer) {
 	newPlayer->alive = true;
 	newPlayer->saved = false;
@@ -15,6 +16,7 @@ void init_player(Player *newPlayer) {
 	newPlayer->kill_votes = 0;
 }
 
+// Author: Nikhil
 void listInsert(int fd, PlayerList *list) {
 
 	Player *newPlayer = (Player *)malloc(sizeof(Player));
@@ -36,6 +38,7 @@ void listInsert(int fd, PlayerList *list) {
 	}
 }
 
+// Author: Nikhil
 void listRemove(char *name, PlayerList *list) {
 
 	Player *cur = list->head;
@@ -63,6 +66,7 @@ void listRemove(char *name, PlayerList *list) {
 	}
 }
 
+// Author: Nikhil
 Player *listFind(char *name, PlayerList *list) {
 	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
 		if(strcasecmp(name,cur->name) == 0)
@@ -72,6 +76,7 @@ Player *listFind(char *name, PlayerList *list) {
 	return NULL;
 }
 
+// Author: Nikhil
 void listPrint(PlayerList *list) {
 	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
 		if(cur->alive)
@@ -79,6 +84,7 @@ void listPrint(PlayerList *list) {
 	}
 }
 
+// Author: Daniel
 int listSprint(char *buf, PlayerList *list) {
 	int nbytes = strlen(buf);
 	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
@@ -93,6 +99,7 @@ int listSprint(char *buf, PlayerList *list) {
 }
 
 
+// Author: Nikhil
 void listDestroy(PlayerList *list) {
 
 	Player *cur = list->head;
@@ -108,23 +115,27 @@ void listDestroy(PlayerList *list) {
 	}
 }
 
+// Author: Nikhil
 void init_list(PlayerList *list) {
 	list->head = NULL;
 	list->size = 0;
 }
 
+// Author: Nikhil
 void listApply(void (*a)(Player *p, void *aux),PlayerList *players, void *aux) {
 	for(Player *cur = players->head; cur; cur = cur->next) {
 		a(cur, aux);
 	}
 }
 
+// Author: Daniel
 void listSend(PlayerList *players, char *msg, int length) {
 	for(Player *cur = players->head; cur; cur = cur->next) {
 		robustSend(cur->fd, msg, length);
 	}
 }
 
+// Author: Daniel
 void listApplyTo(void (*a)(Player *p, void *aux), PlayerList *players, Role r, void *aux) {
 	for(Player *cur = players->head; cur; cur = cur->next) {
 		if (cur->role != r)
@@ -133,6 +144,7 @@ void listApplyTo(void (*a)(Player *p, void *aux), PlayerList *players, Role r, v
 	}
 }
 
+// Author: Daniel
 void listSendTo(PlayerList *players, Role r, char *msg, int length) {
 	for(Player *cur = players->head; cur; cur = cur->next) {
 		if (cur->role != r)
@@ -141,18 +153,21 @@ void listSendTo(PlayerList *players, Role r, char *msg, int length) {
 	}
 }
 
+// Author: Daniel
 void __alive(Player *p, void *aux) {
 	int *num_alive = aux;
 	if (p->alive)
 		(*num_alive)++;
 }
 
+// Author: Daniel
 int listNumAlive(PlayerList *players) {
 	int num_alive = 0;
 	listApply(&__alive, players, (void *)&num_alive);
 	return num_alive;
 }
 
+// Author: Daniel
 int listNumAliveOf(PlayerList *players, Role r) {
 	int num_alive = 0;
 	listApplyTo(&__alive, players, r, (void *)&num_alive);

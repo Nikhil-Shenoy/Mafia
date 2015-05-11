@@ -1,6 +1,6 @@
 #include "gameFlow.h"
 
-
+// Author: Nikhil
 void assignRoles(PlayerList *players) {
 
 	int numPlayers = players->size;
@@ -51,6 +51,7 @@ void assignRoles(PlayerList *players) {
 	cur->role = ROLE_DOCTOR;
 }
 
+// Author: Nikhil
 void describeRole(Player *p, void *aux) {
 	(void)aux;
 
@@ -61,6 +62,7 @@ void describeRole(Player *p, void *aux) {
 	robustSend(p->fd, sendbuf, nbytes);
 }
 
+// Author: Daniel & Nikhil
 void receiveAction(Player *p, void *aux) {
 	PlayerList *players = aux;
 	if (!p->alive)
@@ -120,6 +122,7 @@ void receiveAction(Player *p, void *aux) {
 	}
 }
 
+// Author: Daniel & Nikhil
 void doAction(PlayerList *players, Role r) {
 	char living[players->size*MAXLINE];
 	sprintf(living, "Hello %s! The living players are:\n", roleStr[r]);
@@ -129,13 +132,14 @@ void doAction(PlayerList *players, Role r) {
 	listApplyTo(&receiveAction, players, r, (void *)players);
 }
 
+// Author: Daniel
 void resetSaved(Player *p, void *aux) {
 	(void)aux;
 
 	p->saved = false;
 }
 
-
+// Author: Daniel
 void resetVote(Player *p, void *aux) {
 	(void)aux;
 
@@ -143,6 +147,7 @@ void resetVote(Player *p, void *aux) {
 	p->kill_votes = 0;
 }
 
+// Author: Daniel
 void printVotes(Player *p, void *aux) {
 	PlayerList *players = aux;
 
@@ -157,10 +162,12 @@ void printVotes(Player *p, void *aux) {
 	p->cur_vote->kill_votes++;
 }
 
+// Author: Daniel
 bool townspeopleVictory(PlayerList *players) {
 	return listNumAliveOf(players, ROLE_MAFIA) == 0;
 }
 
+// Author: Daniel
 bool mafiaVictory(PlayerList *players) {
 	int live_mafia = listNumAliveOf(players, ROLE_MAFIA);
 	return live_mafia >= (listNumAlive(players) - live_mafia);
