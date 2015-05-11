@@ -69,6 +69,8 @@ void listRemove(char *name, PlayerList *list) {
 // Author: Nikhil
 Player *listFind(char *name, PlayerList *list) {
 	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
+		if(!cur->name)
+			continue;
 		if(strcasecmp(name,cur->name) == 0)
 			return cur;
 	}

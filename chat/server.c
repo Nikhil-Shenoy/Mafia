@@ -23,8 +23,9 @@ char* night_message = "It is nighttime.\n";
 char* vote_message = "The town decides to sit down and have a good ol' fashioned lynching.\n"
 	"Who will you vote for?\n";
 char* tied_message = "There was a tie! You'll need to hold a new vote.\n";
-char* mafia_victory_message = "The mafia wins!";
-char* townspeople_victory_message = "The townspeople win!";
+char* mafia_victory_message = "The mafia wins!\n";
+char* townspeople_victory_message = "The townspeople win!\n";
+char* duplicate_name_message = "That name is already taken.\n";
 
 // Author: Daniel
 int newConnection(fd_set *fdset, int listenfd, void *aux) {
@@ -141,9 +142,14 @@ int chatLoop(fd_set *fdset, int cur_fd, void *aux) {
 
 	// If a player's name isn't set yet, do so now.
 	if (sender->name == NULL) {
-		sender->name = malloc(nbytes);
-		strncpy(sender->name, recvbuf, nbytes);
-		debug("FD %d is now %s.", cur_fd, sender->name);
+		Player *original = listFind(recvbuf, clients);
+		if (original) {
+			robustSend(cur_fd, duplicate_name_message, strlen(duplicate_name_message));
+		} else {
+			sender->name = malloc(nbytes);
+			strncpy(sender->name, recvbuf, nbytes);
+			debug("FD %d is now %s.", cur_fd, sender->name);
+		}
 	} else if (recvbuf[0] == '/') {
 		struct chatLoop_obj *args = aux;
 		if (!args->commandler(sender, recvbuf+1, args->aux)) {
@@ -170,19 +176,23 @@ error:
 
 struct voteTarget_obj {
 	Player *max;
-	bool *tied;
+	bool tied;
 };
 
 // Author: Daniel
 void findVoteTarget(Player *p, void *aux) {
+	if(!p->alive)
+		return;
 	struct voteTarget_obj *args = aux;
 
 	if(!args->max) {
 		args->max = p;
-	} else if (p->kill_votes > args->max->kill_votes)
+	} else if (p->kill_votes > args->max->kill_votes) {
 		args->max = p;
-	else if (p->kill_votes == args->max->kill_votes)
-		(*args->tied) = true;
+		args->tied = false;
+	} else if (p->kill_votes == args->max->kill_votes) {
+		args->tied = true;
+	}
 }
 
 // Author: Daniel
@@ -192,7 +202,7 @@ bool winConditionCheck() {
 		return true;
 	}
 	if (townspeopleVictory(clients)) {
-		listSend(clients, mafia_victory_message, strlen(mafia_victory_message));
+		listSend(clients, townspeople_victory_message, strlen(townspeople_victory_message));
 		return true;
 	}
 	return false;
@@ -256,23 +266,22 @@ int main(void)
 			.aux = (void *)&num_votes,
 			.commandler = voteCommandler
 		};
-		bool tied = false;
-		struct voteTarget_obj voteTarget_args = {
-			.max = NULL,
-			.tied = &tied
-		};
+		struct voteTarget_obj voteTarget_args;
 		do {
+			//reset everything
 			num_votes = 0;
+			voteTarget_args.tied = false;
+			voteTarget_args.max = NULL;
 			debug("There are %d live players (out of %d).", listNumAlive(clients), clients->size);
+
 			while(num_votes < listNumAlive(clients)) {
 				fdmax = fdloop(&master, fdmax, listenfd,
 							   &newConnection, &chatLoop, (void *)&voteLoop_args);
 			}
 			listApply(&printVotes, clients, (void *)clients);
 
-			voteTarget_args.max = NULL;
 			listApply(&findVoteTarget, clients, (void *)&voteTarget_args);
-			if (tied) {
+			if (voteTarget_args.tied) {
 				listSend(clients, tied_message, strlen(tied_message));
 			} else {
 				voteTarget_args.max->alive = false;
@@ -281,7 +290,7 @@ int main(void)
 			}
 
 			listApply(&resetVote, clients, NULL);
-		} while(tied);
+		} while(voteTarget_args.tied);
 
 		if (winConditionCheck())
 			return 0;
