@@ -11,6 +11,8 @@ void init_player(Player *newPlayer) {
 	newPlayer->name = NULL;
 	newPlayer->role = ROLE_TOWNSPERSON;
 	newPlayer->next = NULL;
+	newPlayer->cur_vote = NULL;
+	newPlayer->kill_votes = 0;
 }
 
 void listInsert(int fd, PlayerList *list) {
@@ -62,7 +64,6 @@ void listRemove(char *name, PlayerList *list) {
 }
 
 Player *listFind(char *name, PlayerList *list) {
-
 	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
 		if(strcasecmp(name,cur->name) == 0)
 			return cur;
@@ -72,17 +73,25 @@ Player *listFind(char *name, PlayerList *list) {
 }
 
 void listPrint(PlayerList *list) {
-
-	Player *cur = list->head;
-
-	while(cur != NULL) {
+	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
 		if(cur->alive)
 			printf("\t%s\n",cur->name);
-
-		cur = cur->next;
 	}
-	printf("\n");
 }
+
+int listSprint(char *buf, PlayerList *list) {
+	int nbytes = strlen(buf);
+	for(Player *cur = list->head; cur != NULL; cur = cur->next) {
+		if(cur->alive) {
+			strcat(buf, "\t");
+			strcat(buf, cur->name);
+			strcat(buf, "\n");
+			nbytes += strlen(cur->name) + 2;
+		}
+	}
+	return nbytes;
+}
+
 
 void listDestroy(PlayerList *list) {
 
@@ -130,4 +139,16 @@ void listSendTo(PlayerList *players, Role r, char *msg, int length) {
 			continue;
 		robustSend(cur->fd, msg, length);
 	}
+}
+
+void __alive(Player *p, void *aux) {
+	int *num_alive = aux;
+	if (p->alive)
+		(*num_alive)++;
+}
+
+int listNumAlive(PlayerList *players) {
+	int num_alive = 0;
+	listApply(&__alive, players, (void *)&num_alive);
+	return num_alive;
 }

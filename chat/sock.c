@@ -84,3 +84,55 @@ error:
 	perror("accept");
 	return -1;
 }
+
+ssize_t trimmedRecvb(int fd, char *bufp, size_t n)
+{
+    size_t nleft = n;
+    ssize_t nread;
+
+    do {
+		if ((nread = recv(fd, bufp, nleft, 0)) < 0) {
+			check((errno == EINTR), "recv");
+			nread = 0; // start over and call read() again
+		} else if (nread == 0)
+			break; // Done
+		nleft -= nread;
+		bufp += nread;
+    } while (nleft > 0);
+
+	ssize_t length = n - nleft;
+	if (length >= 2) {
+		bufp[length - 2] = '\0';
+		return length - 1;
+	}
+
+    return length;
+error:
+	perror("recv");
+	return -1;
+}
+
+
+ssize_t trimmedRecv(int fd, char *bufp, size_t n)
+{
+    size_t nleft = n;
+    ssize_t nread;
+
+	if ((nread = recv(fd, bufp, nleft, 0)) < 0) {
+		check((errno == EINTR), "recv");
+		nread = 0;
+	}
+	nleft -= nread;
+	bufp += nread;
+
+	ssize_t length = n - nleft;
+	if (length >= 2) {
+		bufp[-2] = '\0';
+		return length - 1;
+	}
+
+    return length;
+error:
+	perror("recv");
+	return -1;
+}

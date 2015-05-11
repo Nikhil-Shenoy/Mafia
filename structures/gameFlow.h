@@ -8,11 +8,10 @@
 
 void assignRoles(PlayerList *players);
 void describeRole(Player *p, void *aux);
-void whoWillYouKill(PlayerList *players);
-void whoWillYouSave(PlayerList *players);
-void whoWillYouInvestigate(PlayerList *players);
+void doAction(PlayerList *players, Role r);
 void collectVotes(PlayerList *players);
-void apply(void (*a)(), PlayerList *players);
-void kill(Player *player);
+void resetSaved(Player *p, void *aux);
+void resetVote(Player *p, void *aux);
+void printVotes(Player *p, void *aux);
 
 #endif

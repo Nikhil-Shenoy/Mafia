@@ -16,6 +16,7 @@
 
 typedef int (*loopExpr)(fd_set *fdset, int fd, void *aux);
 
-int fdloop(fd_set *fdset, int fdmax, loopExpr loopExpr, void *aux);
+int fdloop(fd_set *fdset, int fdmax, int listenfd,
+		   loopExpr listenExpr, loopExpr clientExpr, void *aux);
 
 #endif

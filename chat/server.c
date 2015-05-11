@@ -21,7 +21,8 @@ static bool keep_on_truckin = true;
 char* welcome_message = "Welcome to Mafia!\nPlease enter your name: ";
 char* night_message = "It is nighttime.\n";
 
-int newConnection(fd_set *fdset, int listenfd) {
+int newConnection(fd_set *fdset, int listenfd, void *aux) {
+	(void)aux;
 	int newfd = loggedAccept(listenfd);
 	if (newfd == -1)
 		return -1;
@@ -50,58 +51,103 @@ void broadcastMessage(Player *p, void *aux) {
 	}
 }
 
-struct initLoop_obj {
-	int listenfd;
-	int *num_ready;
+bool readinessCommandler(char *command, void *aux) {
+	int *num_ready = aux;
+	if (strncmp(command, "ready", 5) == 0) {
+		(* num_ready)++;
+		debug("Number of readied clients: %d", *num_ready);
+		return true;
+	}
+	return false;
+}
+
+struct vote_obj {
+	int *num_votes;
+	Player *voter;
 };
 
-int initLoop(fd_set *fdset, int cur_fd, void *aux) {
-	struct initLoop_obj args = *(struct initLoop_obj *)aux;
+bool voteCommandler(char *command, void *aux) {
+	if (strlen(command) <= 5)
+		return false;
 
-	// Either we have a new connection...
-	if (cur_fd == args.listenfd)
-		return newConnection(fdset, args.listenfd);
+	struct vote_obj *args = aux;
+	if (strncmp(command, "vote", 4) == 0) {
+		Player *vote = listFind(command+5, clients);
+		char sendbuf[MAXLINE];
 
-	// ...or we received a message
+		if (!vote) {
+			debug("Player %s voted to kill %s, who does not exist", args->voter->name, command+5);
+			int nbytes = sprintf(sendbuf, "Player %s does not exist\n", command+5);
+			robustSend(args->voter->fd, sendbuf, nbytes);
+
+		} else if (!vote->alive) {
+			debug("Player %s voted to kill %s, who is already dead.", args->voter->name, command+5);
+			int nbytes = sprintf(sendbuf, "Player %s is already dead\n", command+5);
+			robustSend(args->voter->fd, sendbuf, nbytes);
+
+		} else {
+			if (args->voter->cur_vote) {
+				debug("Player %s changed their vote from %s to %s",
+					  args->voter->name, args->voter->cur_vote->name, vote->name);
+			} else {
+				debug("Player %s voted to kill %s", args->voter->name, vote->name);
+				(* args->num_votes)++;
+			}
+			args->voter->cur_vote = vote;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+struct chatLoop_obj {
+	void *aux;
+	bool (*commandler)(char *command, void *aux);
+};
+
+int chatLoop(fd_set *fdset, int cur_fd, void *aux) {
 	int nbytes;
 	char recvbuf[MAXLINE];
 
-	if ((nbytes = recv(cur_fd, recvbuf, sizeof recvbuf, 0)) <= 0) {
-		// got error or connection closed by client
+	Player *sender;
+	for(sender = clients->head; sender; sender=sender->next) {
+		if (sender->fd == cur_fd)
+			break;
+	}
+	check(sender, "Could not find client for fd %d", cur_fd);
+
+	if (!sender->alive) {
+		return -1;
+	}
+
+	nbytes = trimmedRecv(cur_fd, recvbuf, sizeof(recvbuf));
+	// got error or connection closed by client
+	if (nbytes <= 0) {
 		if (nbytes == 0) {
 			// connection closed
 			log_info("socket %d hung up", cur_fd);
-		} else {
-			perror("recv");
 		}
-		close(cur_fd); // bye!
+		close(cur_fd);
 		FD_CLR(cur_fd, fdset); // remove from master set
 		return -1;
 	}
 
-	Player *sender = clients->head;
-	while(sender) {
-		if (sender->fd == cur_fd) {
-			break;
-		}
-		sender = sender->next;
-	}
-	check(sender, "Could not find client for fd %d", cur_fd);
-
 	// If a player's name isn't set yet, do so now.
 	if (sender->name == NULL) {
-		recvbuf[nbytes-2] = '\0';
-		sender->name = malloc(strlen(recvbuf));
-		strcpy(sender->name, recvbuf);
+		sender->name = malloc(nbytes);
+		strncpy(sender->name, recvbuf, nbytes);
 		debug("FD %d is now %s.", cur_fd, sender->name);
 	} else if (recvbuf[0] == '/') {
-		if (strncmp(recvbuf+1, "ready", 5) == 0) {
-			(* args.num_ready)++;
-			debug("Number of readied clients: %d", (*args.num_ready));
+		struct chatLoop_obj *args = aux;
+		if (!args->commandler(recvbuf+1, args->aux)) {
+			char invalid[] = "Invalid command.\n";;
+			robustSend(cur_fd, invalid, strlen(invalid));
 		}
+
 	} else {
 		char sendbuf[MAXLINE*2];
-		nbytes = sprintf(sendbuf, "%s: %s", sender->name, recvbuf);
+		nbytes = sprintf(sendbuf, "%s: %s\n", sender->name, recvbuf);
 
 		struct broadcast_obj broadcast_args = {
 			.msg = sendbuf,
@@ -114,6 +160,22 @@ int initLoop(fd_set *fdset, int cur_fd, void *aux) {
 	return 0;
 error:
 	return -1;
+}
+
+struct voteTarget_obj {
+	Player *max;
+	bool *tied;
+};
+
+void findVoteTarget(Player *p, void *aux) {
+	struct voteTarget_obj *args = aux;
+
+	if(!args->max) {
+		args->max = p;
+	} else if (p->kill_votes > args->max->kill_votes)
+		args->max = p;
+	else if (p->kill_votes == args->max->kill_votes)
+		(*args->tied) = true;
 }
 
 int main(void)
@@ -132,14 +194,16 @@ int main(void)
 
 	// Start up a chat server that runs until everyone is ready
 	int num_ready = 0;
-	struct initLoop_obj initLoop_args = {
-		.listenfd = listenfd,
-		.num_ready = &num_ready
+	struct chatLoop_obj chatLoop_args = {
+		.aux = (void *)&num_ready,
+		.commandler = readinessCommandler
 	};
+
 	while(keep_on_truckin &&
 		  (num_ready < READY_THRESHOLD ||
 		   num_ready < clients->size)) {
-		fdmax = fdloop(&master, fdmax, &initLoop, (void *)&initLoop_args);
+		fdmax = fdloop(&master, fdmax, listenfd,
+					   &newConnection, &chatLoop, (void *)&chatLoop_args);
 	}
 
 	bool game_over = false;
@@ -150,10 +214,47 @@ int main(void)
 	// here.
 
 	while(keep_on_truckin && !game_over) {
+		// Nighttime
 		listSend(clients, night_message, strlen(night_message));
-		whoWillYouKill(clients);
+		doAction(clients, ROLE_DOCTOR);
+		doAction(clients, ROLE_COP);
+		doAction(clients, ROLE_MAFIA);
+		listApply(&resetSaved, clients, NULL);
+
+		// Daytime
+		int num_votes;
+		struct chatLoop_obj voteLoop_args = {
+			.aux = (void *)&num_votes,
+			.commandler = voteCommandler
+		};
+		bool tied = false;
+		struct voteTarget_obj voteTarget_args = {
+			.max = NULL,
+			.tied = &tied
+		};
+		do {
+			num_votes = 0;
+			debug("There are %d live players (out of %d).", listNumAlive(clients), clients->size);
+			while(num_votes < listNumAlive(clients)) {
+				fdmax = fdloop(&master, fdmax, listenfd,
+							   &newConnection, &chatLoop, (void *)&voteLoop_args);
+			}
+			listApply(&printVotes, clients, (void *)clients);
+
+			voteTarget_args.max = NULL;
+			listApply(&findVoteTarget, clients, (void *)&voteTarget_args);
+			if (tied) {
+				//tell peeps
+			} else {
+				voteTarget_args.max->alive = false;
+				//tell peeps
+			}
+
+			listApply(&resetVote, clients, NULL);
+		} while(tied);
+
+		// Victory Condition check
 		return 0;
-		// set all saved to false
 	}
 
 	return 0;

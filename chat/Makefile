@@ -17,4 +17,4 @@ select: select.o
 	$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
-	rm -rf *.o server
+	rm -rf *.o server ../structures/*.o

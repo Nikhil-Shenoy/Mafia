@@ -71,98 +71,70 @@ void describeRole(Player *p, void *aux) {
 	robustSend(p->fd, sendbuf, nbytes);
 }
 
-void receiveKill(Player *p, void *aux) {
+void receiveAction(Player *p, void *aux) {
 	PlayerList *players = aux;
 
 	char sendbuf[MAXLINE];
 	char recvbuf[MAXLINE];
-	Player *toKill = NULL;
-	while(!toKill) {
-		recv(p->fd, recvbuf, sizeof recvbuf, 0);
-		toKill = listFind(recvbuf, players);
-		if(!toKill) {
-			debug("Mafia player %s chose to kill %s, who does not exist", p->name, recvbuf);
-			int nbytes = sprintf(sendbuf, "Player %s does not exist", recvbuf);
+	Player *toDoAThing = NULL;
+	while(!toDoAThing) {
+		int nbytes = sprintf(sendbuf, "Who do you want to %s?\n--> ",
+							 roleActionStr[p->role]);
+		robustSend(p->fd, sendbuf, nbytes);
+
+		trimmedRecv(p->fd, recvbuf, sizeof recvbuf);
+		toDoAThing = listFind(recvbuf, players);
+
+		if(!toDoAThing) {
+			debug("%s player %s chose to %s %s, who does not exist",
+				  roleStr[p->role], p->name, roleActionStr[p->role], recvbuf);
+			nbytes = sprintf(sendbuf, "Player %s does not exist\n", recvbuf);
 			robustSend(p->fd, sendbuf, nbytes);
 		} else {
-			debug("Mafia player %s chose to kill %s", p->name, toKill->name);
+			debug("%s player %s chose to %s %s.",
+				  roleStr[p->role], p->name, roleActionStr[p->role], recvbuf);
 		}
 	}
 
-	if(!(toKill->saved))
-		toKill->alive = false;
+	switch(p->role) {
+	case ROLE_MAFIA: {
+		char morning[] = "It is the dawn of a new day.\n";
+		strcpy(sendbuf, morning);
+
+		if(!(toDoAThing->saved)) {
+			toDoAThing->alive = false;
+			int nbytes = sprintf(sendbuf, "%sIt appears %s died amidst your slumber!\n", morning, recvbuf);
+			listSend(players, sendbuf, nbytes);
+		} else {
+			char nobody_died[] = "Nobody died last night.\n";
+			strcat(sendbuf, nobody_died);
+			listSend(players, sendbuf, strlen(sendbuf));
+		}
+		break;
+	}
+
+	case ROLE_COP: {
+		int nbytes = sprintf(sendbuf, "Player %s is %s mafioso.\n" , recvbuf,
+							 (toDoAThing->role == ROLE_MAFIA)? "a" : "not a");
+		robustSend(p->fd, sendbuf, nbytes);
+		break;
+	}
+
+	case ROLE_DOCTOR:
+		toDoAThing->saved = true;
+		break;
+	default:
+		break;
+	}
 }
 
-void whoWillYouKill(PlayerList *players) {
-	char mafiaMesg[] = "Hello Mafioso! The living players are:\n";
-
+void doAction(PlayerList *players, Role r) {
 	char living[players->size*MAXLINE];
-	memset(living,'\0',(players->size)*MAXLINE);
-	strcpy(living, mafiaMesg);
+	sprintf(living, "Hello %s! The living players are:\n", roleStr[r]);
+	listSprint(living, players);
+	listSendTo(players, r, living, strlen(living));
 
-	for(Player *cur = players->head; cur; cur = cur->next) {
-		strcat(living, "\t");
-		strcat(living, cur->name);
-		strcat(living, "\n");
-	}
-
-	char command[] = "Who do you want to kill?\n--> ";
-	strcat(living, command);
-
-	listSendTo(players, ROLE_MAFIA, living, strlen(living));
-	listApplyTo(&receiveKill, players, ROLE_MAFIA, NULL);
-}
-
-void whoWillYouSave(PlayerList *players) {
-
-	char doctorMesg[] = "Hello Doctor! The living players are:\n";
-
-	char living[players->size][MAXLINE];
-	memset(living,'\0',(players->size)*MAXLINE);
-
-
-	Player *cur = players->head;
-	int i;
-	for(i = 0; i < players->size; cur = cur->next) {
-		living[i][0] = '\t';
-		strcat(living[i],cur->name);
-		i++;
-	}
-
-	char command[] = "\nWho do you want to save?\n--> ";
-
-	// Insert receive command for processing
-
-	//Player *toSave = listFind(/*name*/,players);
-	//toSave->saved = true;
-}
-
-void whoWillYouInvestigate(PlayerList *players) {
-
-	char copMesg[] = "Hello Cop! The living players are:\n";
-
-	char living[players->size][MAXLINE];
-	memset(living,'\0',(players->size)*MAXLINE);
-
-
-	Player *cur = players->head;
-	int i;
-	for(i = 0; i < players->size; cur = cur->next) {
-		living[i][0] = '\t';
-		strcat(living[i],cur->name);
-		i++;
-	}
-
-	char command[] = "\nWho do you want to investigate?\n--> ";
-
-	// Insert receive command for processing
-
-	//Player *toInvestigate = listFind(/*name*/,players);
-
-	/* if(toInvestigate->role == ROLE_MAFIA) */
-	/* 	printf("send yes\n"); */
-	/* else */
-	/* 	printf("send no\n");	 */
+	listApplyTo(&receiveAction, players, r, (void *)players);
 }
 
 void collectVotes(PlayerList *players) {
@@ -224,6 +196,30 @@ void collectVotes(PlayerList *players) {
 
 }
 
-void kill(Player *player) {
-	player->alive = false;
+void resetSaved(Player *p, void *aux) {
+	(void)aux;
+
+	p->saved = false;
+}
+
+
+void resetVote(Player *p, void *aux) {
+	(void)aux;
+
+	p->cur_vote = NULL;
+	p->kill_votes = 0;
+}
+
+void printVotes(Player *p, void *aux) {
+	PlayerList *players = aux;
+
+	if (!p->alive)
+		return;
+
+	char sendbuf[MAXLINE];
+	int nbytes = sprintf(sendbuf, "%s voted to kill %s.\n", p->name, p->cur_vote->name);
+
+	listSend(players, sendbuf, nbytes);
+
+	p->cur_vote->kill_votes++;
 }
